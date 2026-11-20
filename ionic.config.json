@@ -1,0 +1,7 @@
+{
+  "name": "Autoridad Política",
+  "type": "angular-standalone",
+  "integrations": {
+    "capacitor": {}
+  }
+}

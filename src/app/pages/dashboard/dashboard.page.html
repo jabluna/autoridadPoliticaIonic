@@ -1,0 +1,93 @@
+<ion-content [fullscreen]="true" class="dashboard-screen">
+  <div class="dashboard-shell">
+    <header class="dashboard-topbar">
+      <div class="dashboard-brand">
+        <span class="dashboard-brand__symbol"><span></span></span>
+        <div><strong>AUTORIDAD POLÍTICA</strong><small>GRUPO DE TRABAJO</small></div>
+      </div>
+      <button type="button" class="logout-button" (click)="logout()" [disabled]="loggingOut">
+        <ion-icon name="log-out-outline" aria-hidden="true"></ion-icon>
+        <span>{{ loggingOut ? 'Cerrando...' : 'Salir' }}</span>
+      </button>
+    </header>
+
+    <main class="dashboard-main">
+      <div class="welcome-tag"><span></span> SESIÓN ACTIVA</div>
+      <div class="welcome-heading">
+        <div>
+          <h1>Hola, <span>{{ firstName }}</span><span class="welcome-comma">.</span></h1>
+          <p>Bienvenido a tu espacio de trabajo territorial.</p>
+        </div>
+        <div class="profile-bubble" aria-hidden="true">
+          {{ firstName.slice(0, 1).toUpperCase() }}
+        </div>
+      </div>
+
+      <section class="main-overview" aria-label="Resumen de la cuenta">
+        <div class="overview-label"><ion-icon name="shield-checkmark-outline"></ion-icon> IDENTIDAD VERIFICADA</div>
+        <h2>{{ profile()?.clienteNombre || 'Mi grupo de trabajo' }}</h2>
+        <p>Tu cuenta está conectada con la plataforma de Autoridad Política. Los módulos de gestión se incorporarán progresivamente.</p>
+        <div class="overview-meta">
+          <span><ion-icon name="checkmark-circle-outline"></ion-icon> {{ roleLabel }}</span>
+          <span>{{ profile()?.email }}</span>
+        </div>
+      </section>
+
+      <div class="section-title">
+        <div><span class="eyebrow">PANORAMA GENERAL</span><h3>Tu espacio de trabajo</h3></div>
+        <span class="section-caption">ETAPA INICIAL</span>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <ion-icon name="layers-outline" aria-hidden="true"></ion-icon>
+          <strong>{{ loadingCampaigns ? '—' : campaigns.length }}</strong>
+          <span>{{ profile()?.rol === 'red_usuario' ? 'Campaña asignada' : 'Campañas registradas' }}</span>
+        </div>
+        <div class="stat-card">
+          <ion-icon name="checkmark-circle-outline" aria-hidden="true"></ion-icon>
+          <strong>{{ loadingCampaigns ? '—' : activeCampaigns }}</strong>
+          <span>Campañas activas</span>
+        </div>
+        <div class="stat-card stat-card--access">
+          <ion-icon name="people-outline" aria-hidden="true"></ion-icon>
+          <strong>Multired</strong>
+          <span>Próximo módulo: Mi Red</span>
+        </div>
+      </div>
+
+      @if (warning) {
+        <p class="warning" role="alert">{{ warning }}</p>
+      }
+
+      <div class="section-title campaigns-heading">
+        <div><span class="eyebrow">CONECTADO A FIREBASE</span><h3>Mis campañas</h3></div>
+      </div>
+      @if (loadingCampaigns) {
+        <div class="loading-line"><ion-spinner name="crescent"></ion-spinner> Consultando campañas...</div>
+      } @else if (campaigns.length) {
+        <div class="campaign-grid">
+          @for (item of campaigns; track item.id) {
+            <article class="campaign-item">
+              <div class="campaign-icon"><ion-icon name="grid-outline"></ion-icon></div>
+              <div class="campaign-info">
+                <strong>{{ item.nombre }}</strong>
+                <span>{{ item.corporacion }}</span>
+              </div>
+              <span class="campaign-state" [class.campaign-state--active]="item.estado === 'activa'">{{ item.estado }}</span>
+            </article>
+          }
+        </div>
+      } @else {
+        <div class="empty-state">No hay campañas disponibles para esta cuenta.</div>
+      }
+
+      <div class="next-step">
+        <ion-icon name="people-outline"></ion-icon>
+        <div><strong>Siguiente etapa: Mi Red</strong><p>Incorporaremos la red jerárquica, el registro de líderes y las personas de tu grupo.</p></div>
+        <span>PRÓXIMAMENTE</span>
+      </div>
+    </main>
+    <footer class="dashboard-footer">Autoridad Política · Aplicación móvil Android e iOS</footer>
+  </div>
+</ion-content>

@@ -1,0 +1,25 @@
+# Dependencias, compilación y datos locales
+node_modules/
+www/
+dist/
+out-tsc/
+.angular/
+.ionic/
+coverage/
+.env
+.env.*
+!.env.example
+.DS_Store
+*.log
+*.tsbuildinfo
+.idea/
+.vscode/*
+!.vscode/extensions.json
+# Plataformas Android/iOS se agregan localmente en la siguiente fase.
+# Nunca incluir archivos de firma/credenciales en Git.
+*.keystore
+*.jks
+*.p12
+*.mobileprovision
+android/local.properties
+ios/App/Pods/

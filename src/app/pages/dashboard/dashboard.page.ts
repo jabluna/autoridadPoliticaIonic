@@ -162,7 +162,7 @@ export class DashboardPage implements OnInit {
       const campaignsSnapshot = current.rol === 'cliente_admin'
         ? await getDocs(collection(db, 'clientes', current.clienteId, 'campanas'))
         : null;
-      let campaigns = campaignsSnapshot?.docs.map(item => ({ id: item.id, ...item.data() })) || [];
+      let campaigns: Array<Record<string, unknown>> = campaignsSnapshot?.docs.map(item => ({ id: item.id, ...item.data() })) || [];
       if (current.rol === 'red_usuario' && current.campanaId) {
         const linked = await getDoc(doc(db, 'clientes', current.clienteId, 'campanas', current.campanaId));
         campaigns = linked.exists() ? [{ id: linked.id, ...linked.data() }] : [];
@@ -282,7 +282,7 @@ export class DashboardPage implements OnInit {
             let date: Date | null = null;
             if (raw && typeof raw === 'object' && typeof raw.toDate === 'function') date = raw.toDate();
             else if (raw && typeof raw === 'object' && typeof raw.seconds === 'number') date = new Date(raw.seconds * 1000);
-            else if (raw) date = new Date(raw);
+            else if (typeof raw === 'string' || typeof raw === 'number') date = new Date(raw);
             return {
               id: item.id,
               titulo: String(value['titulo'] || 'Notificación'),

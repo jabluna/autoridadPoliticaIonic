@@ -1,93 +1,202 @@
 <ion-content [fullscreen]="true" class="dashboard-screen">
   <div class="dashboard-shell">
     <header class="dashboard-topbar">
-      <div class="dashboard-brand">
+      <button type="button" class="brand-button" (click)="menuOpen = true" aria-label="Abrir menú">
         <span class="dashboard-brand__symbol"><span></span></span>
-        <div><strong>AUTORIDAD POLÍTICA</strong><small>GRUPO DE TRABAJO</small></div>
-      </div>
-      <button type="button" class="logout-button" (click)="logout()" [disabled]="loggingOut">
-        <ion-icon name="log-out-outline" aria-hidden="true"></ion-icon>
-        <span>{{ loggingOut ? 'Cerrando...' : 'Salir' }}</span>
+        <div class="dashboard-brand__copy"><strong>AUTORIDAD POLÍTICA</strong><small>PLATAFORMA MULTIRED</small></div>
+        <ion-icon name="menu-outline" class="menu-cue"></ion-icon>
       </button>
+      <div class="header-actions">
+        @if (profile()?.rol === 'cliente_admin') {
+          <button type="button" class="header-icon" (click)="notificationsOpen = true" aria-label="Ver notificaciones">
+            <ion-icon name="notifications-outline"></ion-icon>
+            @if (unread) { <span class="notice-dot">{{ unread > 9 ? '9+' : unread }}</span> }
+          </button>
+        }
+        <button type="button" class="header-icon" (click)="refresh()" [disabled]="refreshing || loadingCampaigns" aria-label="Actualizar dashboard">
+          <ion-icon name="refresh-outline"></ion-icon>
+        </button>
+        <button type="button" class="header-icon exit-action" (click)="logout()" [disabled]="loggingOut" aria-label="Cerrar sesión">
+          <ion-icon name="log-out-outline"></ion-icon>
+        </button>
+      </div>
     </header>
 
     <main class="dashboard-main">
-      <div class="welcome-tag"><span></span> SESIÓN ACTIVA</div>
-      <div class="welcome-heading">
+      <section class="welcome-section">
         <div>
+          <span class="welcome-tag"><span></span> CENTRO DE CONTROL · {{ roleLabel }}</span>
           <h1>Hola, <span>{{ firstName }}</span><span class="welcome-comma">.</span></h1>
-          <p>Bienvenido a tu espacio de trabajo territorial.</p>
+          <p>Así avanza tu grupo de trabajo.</p>
         </div>
-        <div class="profile-bubble" aria-hidden="true">
-          {{ firstName.slice(0, 1).toUpperCase() }}
-        </div>
-      </div>
-
-      <section class="main-overview" aria-label="Resumen de la cuenta">
-        <div class="overview-label"><ion-icon name="shield-checkmark-outline"></ion-icon> IDENTIDAD VERIFICADA</div>
-        <h2>{{ profile()?.clienteNombre || 'Mi grupo de trabajo' }}</h2>
-        <p>Tu cuenta está conectada con la plataforma de Autoridad Política. Los módulos de gestión se incorporarán progresivamente.</p>
-        <div class="overview-meta">
-          <span><ion-icon name="checkmark-circle-outline"></ion-icon> {{ roleLabel }}</span>
-          <span>{{ profile()?.email }}</span>
-        </div>
+        <div class="profile-bubble" aria-hidden="true">{{ firstName.slice(0, 1).toUpperCase() }}</div>
       </section>
 
-      <div class="section-title">
-        <div><span class="eyebrow">PANORAMA GENERAL</span><h3>Tu espacio de trabajo</h3></div>
-        <span class="section-caption">ETAPA INICIAL</span>
+      <div class="mobile-tabs" role="group" aria-label="Secciones del panel">
+        <button [class.tab-active]="activeTab === 'resumen'" (click)="switchTab('resumen')">Resumen</button>
+        <button [class.tab-active]="activeTab === 'lideres'" (click)="switchTab('lideres')">Líderes</button>
+        @if (profile()?.rol === 'cliente_admin') { <button [class.tab-active]="activeTab === 'avisos'" (click)="switchTab('avisos')">Avisos @if (unread) { <b>{{ unread }}</b> }</button> }
       </div>
 
-      <div class="stats-grid">
-        <div class="stat-card">
-          <ion-icon name="layers-outline" aria-hidden="true"></ion-icon>
-          <strong>{{ loadingCampaigns ? '—' : campaigns.length }}</strong>
-          <span>{{ profile()?.rol === 'red_usuario' ? 'Campaña asignada' : 'Campañas registradas' }}</span>
-        </div>
-        <div class="stat-card">
-          <ion-icon name="checkmark-circle-outline" aria-hidden="true"></ion-icon>
-          <strong>{{ loadingCampaigns ? '—' : activeCampaigns }}</strong>
-          <span>Campañas activas</span>
-        </div>
-        <div class="stat-card stat-card--access">
-          <ion-icon name="people-outline" aria-hidden="true"></ion-icon>
-          <strong>Multired</strong>
-          <span>Próximo módulo: Mi Red</span>
-        </div>
-      </div>
-
-      @if (warning) {
-        <p class="warning" role="alert">{{ warning }}</p>
-      }
-
-      <div class="section-title campaigns-heading">
-        <div><span class="eyebrow">CONECTADO A FIREBASE</span><h3>Mis campañas</h3></div>
-      </div>
+      @if (warning) { <div class="warning" role="alert">{{ warning }}</div> }
       @if (loadingCampaigns) {
-        <div class="loading-line"><ion-spinner name="crescent"></ion-spinner> Consultando campañas...</div>
-      } @else if (campaigns.length) {
-        <div class="campaign-grid">
-          @for (item of campaigns; track item.id) {
-            <article class="campaign-item">
-              <div class="campaign-icon"><ion-icon name="grid-outline"></ion-icon></div>
-              <div class="campaign-info">
-                <strong>{{ item.nombre }}</strong>
-                <span>{{ item.corporacion }}</span>
-              </div>
-              <span class="campaign-state" [class.campaign-state--active]="item.estado === 'activa'">{{ item.estado }}</span>
-            </article>
-          }
-        </div>
+        <div class="loading-line"><ion-spinner name="crescent"></ion-spinner> Sincronizando datos con Firebase...</div>
       } @else {
-        <div class="empty-state">No hay campañas disponibles para esta cuenta.</div>
-      }
+        @if (activeTab === 'resumen') {
+          <section class="main-overview" aria-label="Resumen de la cuenta">
+            <div class="overview-label"><ion-icon name="shield-checkmark-outline"></ion-icon> CUENTA VINCULADA</div>
+            <div class="overview-header">
+              @if (account?.logoURL) { <img class="client-logo" [src]="account?.logoURL" alt="Logo de la campaña"> }
+              <h2>{{ account?.nombre || profile()?.clienteNombre }}</h2>
+            </div>
+            <p>{{ profile()?.email }} · {{ roleLabel }}</p>
+            @if (currentSlogan) {
+              <div class="slogan"><span>LEMA DE CAMPAÑA</span><strong>“{{ currentSlogan }}”</strong></div>
+            }
+            <div class="overview-meta">
+              <span><ion-icon name="layers-outline"></ion-icon> {{ campaigns.length }} {{ campaigns.length === 1 ? 'campaña' : 'campañas' }}</span>
+              <span><ion-icon name="checkmark-circle-outline"></ion-icon> {{ activeCampaigns }} {{ activeCampaigns === 1 ? 'activa' : 'activas' }}</span>
+              <span><ion-icon name="people-outline"></ion-icon> {{ account?.niveles || 1 }} niveles</span>
+            </div>
+          </section>
 
-      <div class="next-step">
-        <ion-icon name="people-outline"></ion-icon>
-        <div><strong>Siguiente etapa: Mi Red</strong><p>Incorporaremos la red jerárquica, el registro de líderes y las personas de tu grupo.</p></div>
-        <span>PRÓXIMAMENTE</span>
-      </div>
+          <section class="panel-block">
+            <div class="section-title"><div><span class="eyebrow">INDICADORES ACTUALES</span><h2>Resumen de multired</h2></div><ion-icon name="stats-chart-outline"></ion-icon></div>
+            <p class="section-subtitle">Los mismos cálculos de líderes, integrantes y proyección que utiliza la plataforma web.</p>
+            <div class="stats-grid">
+              <div class="stat-card"><span class="stat-icon mint"><ion-icon name="people-outline"></ion-icon></span><strong>{{ format(metrics.lideres) }}</strong><span>Líderes</span></div>
+              <div class="stat-card"><span class="stat-icon cyan"><ion-icon name="person-circle-outline"></ion-icon></span><strong>{{ format(metrics.integrantes) }}</strong><span>Integrantes</span></div>
+              <div class="stat-card"><span class="stat-icon emerald"><ion-icon name="pulse-outline"></ion-icon></span><strong>{{ format(metrics.votosRed) }}</strong><span>Consolidado equipo</span></div>
+              <div class="stat-card"><span class="stat-icon amber"><ion-icon name="trending-up-outline"></ion-icon></span><strong>{{ format(metrics.votosEstimados) }}</strong><span>Estimado manual</span></div>
+              <div class="stat-card stat-card--matrix"><span class="stat-icon violet"><ion-icon name="grid-outline"></ion-icon></span><strong>{{ metrics.matrizDirectos }} × {{ metrics.matrizProfundidad }}</strong><span>Matriz · directos × profundidad</span></div>
+            </div>
+            <div class="completion-panel">
+              <div class="row-between"><span>Cumplimiento de la multired</span><strong>{{ percent(completion) }}</strong></div>
+              <div class="progress-track"><div class="progress-fill" [style.width.%]="completionBar"></div></div>
+              <p>Diferencia entre estimado y consolidado: <strong>{{ format(difference) }}</strong></p>
+            </div>
+          </section>
+
+          <section class="panel-block projection-card">
+            <div class="section-title"><div><span class="eyebrow">SEGUIMIENTO ELECTORAL</span><h2>Proyección electoral</h2></div><strong class="section-percent">{{ percent(completion) }}</strong></div>
+            <p class="section-subtitle">Aporte acumulado de la red frente al estimado manual. No son resultados electorales verificados.</p>
+            <div class="progress-track"><div class="progress-fill" [style.width.%]="completionBar"></div></div>
+
+            <div class="section-title inner-heading"><div><span class="eyebrow">COMPARACIÓN POR LÍDER</span><h3>Gráfica de proyección</h3></div></div>
+            <div class="chart-legend"><span><i class="legend-green"></i>Aporte de red</span><span><i class="legend-amber"></i>Estimado manual</span></div>
+            <div class="filters">
+              <label class="search-field"><ion-icon name="search-outline"></ion-icon><input type="search" [ngModel]="projectionQuery" (ngModelChange)="changeProjectionQuery($event)" placeholder="Buscar por nombre o ciudad" aria-label="Buscar líder en proyección"></label>
+              <label class="page-size">Mostrar <select [ngModel]="projectionPageSize" (ngModelChange)="changePageSize($event)" aria-label="Líderes por página"><option [ngValue]="5">5</option><option [ngValue]="10">10</option><option [ngValue]="50">50</option><option [ngValue]="100">100</option></select></label>
+            </div>
+            <div class="projection-list">
+              @for (item of visibleProjection; track item.id) {
+                <div class="projection-row">
+                  <div class="leader-line"><strong>{{ item.nombre }}</strong><span>Matriz {{ item.matrizDirectos }}×{{ item.matrizProfundidad }} · {{ item.ciudad }}</span></div>
+                  <div class="bar-line"><div class="bar-track"><div class="bar-fill" [style.width.%]="bar(item.votos, projectionMax)"></div></div><strong>{{ format(item.votos) }}</strong></div>
+                  <div class="bar-line"><div class="bar-track"><div class="bar-fill amber-fill" [style.width.%]="bar(item.estimado, projectionMax)"></div></div><strong>{{ format(item.estimado) }}</strong></div>
+                </div>
+              } @empty { <div class="empty-state">No hay líderes con datos que coincidan con la búsqueda.</div> }
+            </div>
+            <div class="pagination"><span>{{ projectionLeaders.length ? (projectionPage - 1) * projectionPageSize + 1 : 0 }}–{{ projectionPage * projectionPageSize < projectionLeaders.length ? projectionPage * projectionPageSize : projectionLeaders.length }} de {{ projectionLeaders.length }}</span><div><button (click)="previousPage()" [disabled]="projectionPage === 1"><ion-icon name="chevron-back-outline"></ion-icon></button><span>{{ projectionPage }}/{{ projectionPages }}</span><button (click)="nextPage()" [disabled]="projectionPage >= projectionPages"><ion-icon name="chevron-forward-outline"></ion-icon></button></div></div>
+          </section>
+
+          <section class="panel-block">
+            <div class="section-title"><div><span class="eyebrow">CAMPAÑAS REGISTRADAS</span><h2>Mis campañas</h2></div><span class="section-number">{{ campaigns.length }}</span></div>
+            <div class="campaign-grid">
+              @for (item of campaigns; track item.id) {
+                <article class="campaign-item">
+                  <div class="campaign-icon"><ion-icon name="layers-outline"></ion-icon></div>
+                  <div class="campaign-info"><strong>{{ item.nombre }}</strong><span>{{ item.corporacion }} · {{ item.partidoMovimiento || 'Sin movimiento registrado' }}</span></div>
+                  <span class="campaign-state" [class.campaign-state--active]="item.estado === 'activa'">{{ item.estado }}</span>
+                </article>
+              } @empty { <div class="empty-state">No hay campañas disponibles para esta cuenta.</div> }
+            </div>
+          </section>
+
+          <section class="panel-block">
+            <div class="section-title"><div><span class="eyebrow">INFORMACIÓN DE CUENTA</span><h2>Resumen de cuenta</h2></div></div>
+            <div class="account-rows"><div><span>Cliente</span><strong>{{ account?.nombre }}</strong></div><div><span>Plan</span><strong>{{ account?.plan }}</strong></div><div><span>Estado</span><strong>{{ account?.planActivo ? 'Activo' : 'Pendiente' }}</strong></div><div><span>Campañas</span><strong>{{ campaigns.length }}</strong></div></div>
+          </section>
+        }
+
+        @if (activeTab === 'lideres') {
+          <section class="panel-block">
+            <div class="section-title"><div><span class="eyebrow">CONSULTA INDIVIDUAL</span><h2>Ficha de líder</h2></div><span class="section-number">{{ leaders.length }}</span></div>
+            <label class="search-field leader-search"><ion-icon name="search-outline"></ion-icon><input type="search" [(ngModel)]="leaderQuery" placeholder="Buscar por nombre o ciudad" aria-label="Buscar líder"></label>
+            <div class="leaders-picks">
+              @for (item of filteredLeaders; track item.id) {
+                <button type="button" (click)="selectLeader(item)" [class.selected]="selectedLeaderId === item.id">
+                  <strong>{{ item.nombre }}</strong><span>{{ item.ciudad }}</span>
+                </button>
+              } @empty { <div class="empty-state">No hay líderes registrados.</div> }
+            </div>
+            @if (selectedLeader; as leader) {
+              <div class="leader-profile">
+                <div class="leader-header">
+                  @if (leader.fotoUrl) { <img [src]="leader.fotoUrl" [alt]="leader.nombre" class="leader-photo"> }
+                  @else { <div class="leader-initial">{{ leader.nombre.slice(0, 2).toUpperCase() }}</div> }
+                  <div><h3>{{ leader.nombre }}</h3><p><ion-icon name="location-outline"></ion-icon> {{ leader.ciudad }}</p><span>Matriz {{ leader.matrizDirectos }} × {{ leader.matrizProfundidad }}</span></div>
+                </div>
+                <div class="leader-metrics"><div><strong>{{ format(leader.votos) }}</strong><span>Aporte de red</span></div><div><strong>{{ format(leader.estimado) }}</strong><span>Estimado manual</span></div><div><strong>{{ format(leader.estimado - leader.votos) }}</strong><span>Diferencia</span></div></div>
+                <div class="completion-panel">
+                  <div class="row-between"><span>Cumplimiento individual</span><strong>{{ leader.estimado ? percent(leaderProgress(leader)) : 'Sin estimado' }}</strong></div>
+                  <div class="progress-track"><div class="progress-fill" [style.width.%]="clamp(leaderProgress(leader))"></div></div>
+                  <p>El aporte de red es calculado y no equivale a votos oficiales.</p>
+                </div>
+                <h4 class="detail-heading">Estimado vs. votos del líder</h4>
+                <div class="leader-detail-bars"><div><span>Estimado manual</span><strong>{{ format(leader.estimado) }}</strong><div class="bar-track"><div class="bar-fill amber-fill" [style.width.%]="bar(leader.estimado, leaderComparisonMax(leader))"></div></div></div><div><span>Aporte calculado</span><strong>{{ format(leader.votos) }}</strong><div class="bar-track"><div class="bar-fill" [style.width.%]="bar(leader.votos, leaderComparisonMax(leader))"></div></div></div></div>
+              </div>
+            }
+          </section>
+        }
+
+        @if (activeTab === 'avisos' && profile()?.rol === 'cliente_admin') {
+          <section class="panel-block">
+            <div class="section-title"><div><span class="eyebrow">MENSAJES DE LA PLATAFORMA</span><h2>Centro de notificaciones</h2></div><span class="section-number">{{ notices.length }}</span></div>
+            <div class="notices-list">
+              @for (item of notices; track item.id) {
+                <button type="button" class="notice-item" (click)="markAsRead(item)">
+                  <div class="row-between"><span class="notice-type">{{ item.origen }}</span>@if (!item.leida) { <span class="unread-marker"></span> }</div>
+                  <strong>{{ item.titulo }}</strong><p>{{ item.mensaje || 'Sin detalle adicional' }}</p><small>{{ notificationDate(item.fecha) }}</small>
+                </button>
+              } @empty { <div class="empty-state">No hay notificaciones por ahora.</div> }
+            </div>
+          </section>
+        }
+      }
     </main>
-    <footer class="dashboard-footer">Autoridad Política · Aplicación móvil Android e iOS</footer>
+
+    <nav class="bottom-nav" aria-label="Navegación principal">
+      <button type="button" [class.selected]="activeTab === 'resumen'" (click)="switchTab('resumen')"><ion-icon name="grid-outline"></ion-icon><span>Dashboard</span></button>
+      <button type="button" [class.selected]="activeTab === 'lideres'" (click)="switchTab('lideres')"><ion-icon name="people-outline"></ion-icon><span>Líderes</span></button>
+      @if (profile()?.rol === 'cliente_admin') { <button type="button" [class.selected]="activeTab === 'avisos'" (click)="switchTab('avisos')"><ion-icon name="notifications-outline"></ion-icon><span>Avisos</span></button> }
+    </nav>
+
+    <footer class="dashboard-footer">Autoridad Política · Android e iOS</footer>
   </div>
+
+  @if (menuOpen) {
+    <div class="modal-overlay" (click)="menuOpen = false" role="presentation">
+      <div class="drawer-panel" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-label="Menú principal">
+        <div class="drawer-header"><strong>AUTORIDAD POLÍTICA</strong><button (click)="menuOpen = false" aria-label="Cerrar menú"><ion-icon name="close-outline"></ion-icon></button></div>
+        <p>{{ profile()?.nombre }}</p>
+        <button (click)="switchTab('resumen')"><ion-icon name="grid-outline"></ion-icon> Dashboard</button>
+        <button (click)="switchTab('lideres')"><ion-icon name="people-outline"></ion-icon> Líderes</button>
+        @if (profile()?.rol === 'cliente_admin') { <button (click)="switchTab('avisos')"><ion-icon name="notifications-outline"></ion-icon> Notificaciones</button> }
+        <div class="drawer-foot"><span>{{ account?.plan }}</span><button (click)="logout()">Cerrar sesión</button></div>
+      </div>
+    </div>
+  }
+
+  @if (notificationsOpen) {
+    <div class="modal-overlay" (click)="notificationsOpen = false" role="presentation">
+      <div class="notifications-modal" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-label="Notificaciones">
+        <div class="modal-header"><div><span class="eyebrow">CENTRO DE CONTROL</span><h2>Notificaciones</h2></div><button (click)="notificationsOpen = false" aria-label="Cerrar"><ion-icon name="close-outline"></ion-icon></button></div>
+        <div class="modal-list">
+          @for (item of notices; track item.id) { <button type="button" class="notice-item" (click)="markAsRead(item)"><div class="row-between"><span class="notice-type">{{ item.origen }}</span>@if (!item.leida) { <span class="unread-marker"></span> }</div><strong>{{ item.titulo }}</strong><p>{{ item.mensaje }}</p><small>{{ notificationDate(item.fecha) }}</small></button> }
+          @empty { <div class="empty-state">No tienes notificaciones nuevas.</div> }
+        </div>
+      </div>
+    </div>
+  }
 </ion-content>

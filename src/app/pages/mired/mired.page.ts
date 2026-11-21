@@ -175,9 +175,10 @@ export class MiRedPage implements OnInit,OnDestroy {
      if(seen.has(cursor)||seen.size>30)throw Error('Jerarquía inconsistente.');
      seen.add(cursor);
      if(cursor===rootId){authorized=true;break;}
-     const snap=await getDoc(doc(nodes,cursor));
-     if(!snap.exists()||snap.data()['estado']==='inactivo')break;
-     cursor=String(snap.data()['padreId']||'')||null;
+     const ancestorSnap=await getDoc(doc(nodes,String(cursor)));
+     const ancestorData=ancestorSnap.data();
+     if(!ancestorSnap.exists()||!ancestorData||ancestorData['estado']==='inactivo')break;
+     cursor=String(ancestorData['padreId']||'')||null;
     }
     if(!authorized)throw Error('Solo puedes crear líderes dentro de tu propia red.');
    }

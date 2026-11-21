@@ -4,7 +4,7 @@ import { Router } from '@angular/router';
 import { IonContent, IonIcon, IonSpinner } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import { arrowBackOutline, chevronBackOutline, chevronForwardOutline, peopleOutline, personAddOutline, searchOutline, layersOutline, gridOutline, listOutline, closeOutline, refreshOutline, locationOutline, callOutline, mailOutline, menuOutline, personOutline } from 'ionicons/icons';
-import { collection, doc, getDoc, getDocs, limit, onSnapshot, query, where, type Unsubscribe } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, limit, onSnapshot, query, where, setDoc, updateDoc, deleteDoc, serverTimestamp, type Unsubscribe } from 'firebase/firestore';
 import { AuthService } from '../../core/auth.service';
 import { db } from '../../core/firebase';
 
@@ -17,7 +17,7 @@ export class MiRedPage implements OnInit,OnDestroy {
  campaigns:Campaign[]=[];campaignId='';rootName='';focusId:string|null=null;focus:Leader|null=null;leaders:Leader[]=[];people:Person[]=[];
  labels:Record<string,{nombre:string;color:string}>={};view:'grafica'|'tabla'|'comunidad'='grafica';search='';page=1;pageSize=10;
  stats:Record<string,{votos:number;directos:number;profundidad:number}>={};meetingStats:Record<string,{cantidad:number;personas:number}>={};statsReady=false;
- loading=true;branchLoading=false;peopleLoading=false;error='';menuOpen=false;detail:Leader|null=null;
+ loading=true;branchLoading=false;peopleLoading=false;error='';menuOpen=false;detail:Leader|null=null;actionsFor:Leader|null=null;notesFor:Leader|null=null;notes:Array<{id:string;texto:string;fecha:Date|null}>=[];noteText='';editingNoteId='';notesBusy=false;peopleOwner:string|null=null;message='';
  private subscriptions:Unsubscribe[]=[];private branchSubs:Unsubscribe[]=[];
  constructor(private readonly access:AuthService,private readonly router:Router){addIcons({arrowBackOutline,chevronBackOutline,chevronForwardOutline,peopleOutline,personAddOutline,searchOutline,layersOutline,gridOutline,listOutline,closeOutline,refreshOutline,locationOutline,callOutline,mailOutline,menuOutline,personOutline});}
  get isOwner():boolean{return this.profile()?.rol==='cliente_admin';}
@@ -90,10 +90,16 @@ export class MiRedPage implements OnInit,OnDestroy {
  showPeople():void{
   const p=this.profile();if(!p||!this.campaignId)return;
   if(!this.isOwner&&!this.focusId)return;
-  this.view='comunidad';this.search='';this.peopleLoading=true;this.people=[];
+  this.peopleOwner=this.focusId;this.view='comunidad';this.search='';this.peopleLoading=true;this.people=[];
   const path=this.focusId?collection(db,'clientes',p.clienteId,'campanas',this.campaignId,'nodos',this.focusId,'personas'):collection(db,'clientes',p.clienteId,'campanas',this.campaignId,'personasRaiz');
   getDocs(query(path,limit(200))).then(s=>{this.people=s.docs.map(x=>({...x.data(),id:x.id} as Person));}).catch(()=>{this.error='No se pudo consultar la comunidad.';}).finally(()=>this.peopleLoading=false);
  }
+ openPeopleFor(n:Leader):void{this.actionsFor=null;this.openNode(n.id);this.peopleOwner=n.id;this.view='comunidad';this.peopleLoading=true;const p=this.profile();if(!p)return;getDocs(query(collection(db,'clientes',p.clienteId,'campanas',this.campaignId,'nodos',n.id,'personas'),limit(200))).then(s=>this.people=s.docs.map(d=>({...d.data(),id:d.id} as Person))).catch(()=>this.error='No fue posible consultar las personas.').finally(()=>this.peopleLoading=false);}
+ async openNotes(n:Leader):Promise<void>{const p=this.profile();if(!p)return;this.actionsFor=null;this.notesFor=n;this.notes=[];this.noteText='';this.editingNoteId='';this.notesBusy=true;try{const s=await getDocs(collection(db,'clientes',p.clienteId,'campanas',this.campaignId,'nodos',n.id,'notas'));this.notes=s.docs.map(d=>({id:d.id,texto:String(d.data()['texto']||''),fecha:d.data()['fecha']?.toDate?.()||null})).sort((a,b)=>(b.fecha?.getTime()||0)-(a.fecha?.getTime()||0));}catch{this.error='No se pudieron consultar los comentarios.';}finally{this.notesBusy=false;}}
+ async saveNote():Promise<void>{const p=this.profile(),n=this.notesFor;if(!p||!n||!this.noteText.trim()||this.notesBusy)return;this.notesBusy=true;try{const col=collection(db,'clientes',p.clienteId,'campanas',this.campaignId,'nodos',n.id,'notas');if(this.editingNoteId)await updateDoc(doc(col,this.editingNoteId),{texto:this.noteText.trim(),fechaEdicion:serverTimestamp()});else await setDoc(doc(col),{texto:this.noteText.trim(),fecha:serverTimestamp(),autorUid:p.uid||''});await this.openNotes(n);this.message='Comentario guardado.';}catch{this.error='No se pudo guardar el comentario.';}finally{this.notesBusy=false;}}
+ async deleteNote(id:string):Promise<void>{const p=this.profile(),n=this.notesFor;if(!p||!n||this.notesBusy||!confirm('¿Eliminar este comentario?'))return;this.notesBusy=true;try{await deleteDoc(doc(db,'clientes',p.clienteId,'campanas',this.campaignId,'nodos',n.id,'notas',id));this.notes=this.notes.filter(x=>x.id!==id);this.message='Comentario eliminado.';}catch{this.error='No se pudo eliminar el comentario.';}finally{this.notesBusy=false;}}
+ share(n:Leader):void{this.actionsFor=null;const votos=this.stat(n).votos,estimado=Number(n.estimacionVotos||0);const msg='Resumen de la red de '+this.fullName(n)+'\\nVotos de la red: '+this.format(votos)+'\\nEstimado: '+this.format(estimado)+'\\nDiferencia: '+this.format(estimado-votos)+'\\nFecha: '+new Date().toLocaleString('es-CO');window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank','noopener,noreferrer');}
+ unavailable(action:string):void{this.message=action+' requiere portar las validaciones de la web antes de permitir cambios en Firebase.';}
  changeView(v:'grafica'|'tabla'|'comunidad'):void{if(v==='comunidad')this.showPeople();else{this.view=v;this.search='';}}
  next():void{this.page=Math.min(this.totalPages,this.page+1);}
  previous():void{this.page=Math.max(1,this.page-1);}

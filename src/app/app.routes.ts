@@ -13,5 +13,5 @@ export const routes: Routes = [
     canActivate: [requireSessionGuard],
     loadComponent: () => import('./pages/dashboard/dashboard.page').then(m => m.DashboardPage)
   },
-  { path: 'configuracion-campana', canActivate: [requireSessionGuard], loadComponent: () => import('./pages/configuracion-campana/configuracion-campana.page').then(m => m.ConfiguracionCampanaPage) },\n  { path: '**', redirectTo: 'login' }
+  { path: 'configuracion-campana', canActivate: [requireSessionGuard], loadComponent: () => import('./pages/configuracion-campana/configuracion-campana.page').then(m => m.ConfiguracionCampanaPage) },\n 
 ];

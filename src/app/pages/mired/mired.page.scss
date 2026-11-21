@@ -98,12 +98,16 @@
 .leader-photo-picker{display:flex;align-items:center;gap:13px;border:1px solid #376a9b;background:#102b4a;border-radius:14px;padding:13px;margin:13px 0 20px}.leader-photo-picker img,.leader-photo-placeholder{width:62px;height:62px;flex:0 0 62px;border-radius:50%;object-fit:cover;border:2px solid #74a8f3}.leader-photo-placeholder{display:grid;place-items:center;color:#8ebeff;background:#183d67;font-size:30px}.leader-photo-picker label{flex:1;min-width:0;color:#b9d9ff;font-size:12px;font-weight:700;line-height:1.5}.leader-photo-picker input{display:block;margin-top:7px;width:100%;font-size:11px}.person-form label small{font-size:10px;color:#87a9cb;font-weight:400}.person-form .person-fields label.wide span{color:#a6c8f7;font-size:11px}:host-context(.app-light) .leader-photo-picker{background:#e8f4ff;border-color:#b9d9f6}:host-context(.app-light) .leader-photo-picker label{color:#244a7a}:host-context(.app-light) .leader-photo-placeholder{background:#fff;color:#014cff}:host-context(.app-light) .person-form label small{color:#617d9c}:host-context(.app-light) .person-form .person-fields label.wide span{color:#315c91}
 
 /* Diferenciación de líderes en modo oscuro, equivalente a web/light */
-:host:not(:host-context(.app-light)) .leader-card{background:linear-gradient(145deg,#0c294d,#09213e);border:2px solid #278cff;box-shadow:0 5px 20px #00183355}
-:host:not(:host-context(.app-light)) .leader-card.multired{background:linear-gradient(145deg,#075744,#064237);border:2px solid #23d79a;box-shadow:0 5px 20px #003c3155}
-:host:not(:host-context(.app-light)) .leader-card .leader-flags span{color:#87bdff}
-:host:not(:host-context(.app-light)) .leader-card.multired .leader-flags span{color:#8df4c9}
-:host:not(:host-context(.app-light)) .leader-card .leader-card-head strong{color:#f1f7ff}
-:host:not(:host-context(.app-light)) .leader-card.multired .leader-card-head strong{color:#f0fff9}
-:host:not(:host-context(.app-light)) .leader-card.multired .progress-track>div{background:linear-gradient(90deg,#20b87b,#47efb0)}
-:host:not(:host-context(.app-light)) .leader-card.multired .leader-actions .green-button{background:#0b775a;border-color:#37dfab;color:#fff}
-:host:not(:host-context(.app-light)) .leader-card:not(.multired) .leader-actions .green-button{background:#014cff;border-color:#5194ff;color:#fff}
+:host-context(.app-dark) .leader-card{background:linear-gradient(145deg,#0c294d,#09213e);border:2px solid #278cff;box-shadow:0 5px 20px #00183355}
+:host-context(.app-dark) .leader-card.multired{background:linear-gradient(145deg,#075744,#064237);border:2px solid #23d79a;box-shadow:0 5px 20px #003c3155}
+:host-context(.app-dark) .leader-card .leader-flags span{color:#87bdff}
+:host-context(.app-dark) .leader-card.multired .leader-flags span{color:#8df4c9}
+:host-context(.app-dark) .leader-card .leader-card-head strong{color:#f1f7ff}
+:host-context(.app-dark) .leader-card.multired .leader-card-head strong{color:#f0fff9}
+:host-context(.app-dark) .leader-card.multired .progress-track>div{background:linear-gradient(90deg,#20b87b,#47efb0)}
+:host-context(.app-dark) .leader-card.multired .leader-actions .green-button{background:#0b775a;border-color:#37dfab;color:#fff}
+:host-context(.app-dark) .leader-card:not(.multired) .leader-actions .green-button{background:#014cff;border-color:#5194ff;color:#fff}
+
+/* Refuerzo visible de identidad multinodo */
+:host-context(.app-dark) .leader-grid .leader-card.multired{background:#106d52!important;border:2px solid #39e5a8!important}
+:host-context(.app-dark) .leader-grid .leader-card:not(.multired){background:#102b51!important;border:2px solid #398fff!important}

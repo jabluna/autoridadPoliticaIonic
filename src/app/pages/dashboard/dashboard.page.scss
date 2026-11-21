@@ -283,3 +283,34 @@
 :host-context(.app-light) .drawer-foot button{background:#e3ecf5;color:#1b456e;border-color:#b7c9da}
 :host-context(.app-light) .notifications-modal{background:#fff;border-color:#c8d4e0}
 :host-context(.app-light) .modal-header{border-color:#d3dde7}
+
+
+/* Azul eléctrico institucional: acentos vivos sobre superficies legibles. */
+.dashboard-brand__symbol{border-color:#014cff;background:rgba(1,76,255,.15)}
+.dashboard-brand__symbol span{background:#014cff;border-color:#8cb0ff;box-shadow:0 0 0 5px rgba(1,76,255,.18)}
+.welcome-tag span{background:#014cff;box-shadow:0 0 12px rgba(1,76,255,.7)}
+.welcome-section h1 span{color:#478aff}
+.header-icon:focus-visible,.bottom-nav button:focus-visible{outline:2px solid #014cff;outline-offset:2px}
+.mobile-tabs button.tab-active{background:#014cff;color:#fff}
+.main-overview{background:linear-gradient(128deg,#103a96,#0c2867 56%,#071c48);border-color:#2368ed}
+.overview-label{color:#a9c7ff}
+.slogan{background:rgba(1,76,255,.18);border-color:#407dff}
+.overview-meta span{background:rgba(1,76,255,.17);border-color:#4076e4}
+.section-title>ion-icon,.section-percent{color:#478aff}
+.progress-fill{background:linear-gradient(90deg,#014cff,#55a0ff)}
+.legend-green,.bar-fill{background:#014cff}
+.bottom-nav{background:rgba(8,22,52,.98);border-top-color:#1a4ea6}
+.bottom-nav button{flex:1;min-width:0;padding:6px 3px;color:#9db8e9}
+.bottom-nav button.selected{color:#6fa3ff}
+.bottom-nav button.selected ion-icon{color:#014cff}
+:host-context(.app-light) .welcome-section h1 span{color:#014cff}
+:host-context(.app-light) .mobile-tabs button.tab-active{background:#014cff;color:#fff}
+:host-context(.app-light) .main-overview{background:linear-gradient(135deg,#dceaff,#edf4ff);border-color:#86b1ff}
+:host-context(.app-light) .overview-label{color:#014cff}
+:host-context(.app-light) .overview-meta span{background:#fff;border-color:#a9c6ff;color:#184ca8}
+:host-context(.app-light) .slogan{background:#fff;border-color:#a6c4ff}
+:host-context(.app-light) .slogan span{color:#014cff}
+:host-context(.app-light) .section-title>ion-icon,:host-context(.app-light) .section-percent{color:#014cff}
+:host-context(.app-light) .bottom-nav{background:rgba(255,255,255,.98);border-top-color:#a6c6ff}
+:host-context(.app-light) .bottom-nav button{color:#526c9b}
+:host-context(.app-light) .bottom-nav button.selected,:host-context(.app-light) .bottom-nav button.selected ion-icon{color:#014cff}

@@ -180,9 +180,16 @@
       <div class="drawer-panel" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-label="Menú principal">
         <div class="drawer-header"><strong>AUTORIDAD POLÍTICA</strong><button (click)="menuOpen = false" aria-label="Cerrar menú"><ion-icon name="close-outline"></ion-icon></button></div>
         <p>{{ profile()?.nombre }}</p>
+        <div class="drawer-section-title">PRINCIPAL</div>
         <button (click)="switchTab('resumen')"><ion-icon name="grid-outline"></ion-icon> Dashboard</button>
-        <button (click)="switchTab('lideres')"><ion-icon name="people-outline"></ion-icon> Líderes</button>
-        @if (profile()?.rol === 'cliente_admin') { <button (click)="switchTab('avisos')"><ion-icon name="notifications-outline"></ion-icon> Notificaciones</button> }
+        @if (profile()?.rol === 'cliente_admin') { <button (click)="navigateMenu('/configuracion-campana')"><ion-icon name="settings-outline"></ion-icon> Configuración de campañas</button> }
+        <button (click)="navigateMenu('/mired')"><ion-icon name="people-outline"></ion-icon> Mi red</button>
+        <button (click)="navigateMenu('/invitaciones')"><ion-icon name="mail-outline"></ion-icon> Invitaciones a campañas</button>
+        <button (click)="navigateMenu('/evolucion-historica')"><ion-icon name="trending-up-outline"></ion-icon> Evolución histórica</button>
+        <div class="drawer-section-title">MEDIOS</div>
+        @if (profile()?.rol === 'cliente_admin') { <button (click)="navigateMenu('/autorizaciones-gestion')"><ion-icon name="shield-checkmark-outline"></ion-icon> Autorizaciones y gestión</button> }
+        <button (click)="navigateMenu('/medios')"><ion-icon name="folder-outline"></ion-icon> Medios</button>
+        <button (click)="navigateMenu('/galeria')"><ion-icon name="images-outline"></ion-icon> Galería</button>
         <div class="drawer-foot"><span>{{ account?.plan }}</span><button (click)="logout()">Cerrar sesión</button></div>
       </div>
     </div>

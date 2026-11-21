@@ -11,7 +11,7 @@ import {
   peopleOutline, shieldCheckmarkOutline, notificationsOutline, refreshOutline,
   searchOutline, trendingUpOutline, statsChartOutline, chevronBackOutline,
   chevronForwardOutline, closeOutline, locationOutline, menuOutline,
-  personCircleOutline, pulseOutline, settingsOutline, mailOutline, folderOutline, imagesOutline
+  personCircleOutline, pulseOutline, settingsOutline, mailOutline, folderOutline, imagesOutline, sunnyOutline, moonOutline
 } from 'ionicons/icons';
 import { AuthService } from '../../core/auth.service';
 import { ThemeService } from '../../core/theme.service';
@@ -76,7 +76,7 @@ export class DashboardPage implements OnInit {
       peopleOutline, shieldCheckmarkOutline, notificationsOutline, refreshOutline,
       searchOutline, trendingUpOutline, statsChartOutline, chevronBackOutline,
       chevronForwardOutline, closeOutline, locationOutline, menuOutline,
-      personCircleOutline, pulseOutline, settingsOutline, mailOutline, folderOutline, imagesOutline
+      personCircleOutline, pulseOutline, settingsOutline, mailOutline, folderOutline, imagesOutline, sunnyOutline, moonOutline
     });
   }
 

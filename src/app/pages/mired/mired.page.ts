@@ -10,7 +10,8 @@ import { db, rtdb } from '../../core/firebase';
 import { get, ref } from 'firebase/database';
 import { initializeApp, deleteApp } from 'firebase/app';
 import { getAuth, createUserWithEmailAndPassword, sendEmailVerification, signOut } from 'firebase/auth';
-import { firebaseConfig } from '../../core/firebase';
+import { firebaseConfig, storage } from '../../core/firebase';
+import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 interface Campaign {id:string;nombreCampana:string;estado:string;}
 interface Leader {puntuacion?:number;id:string;nombre:string;apellido:string;email:string;telefono:string;ciudad:string;departamento:string;padreId:string|null;nivel:number;estado:string;fotoUrl?:string;estimacionVotos:number;votosEstimadosSubarbol:number;votosRealesSubarbol:number;etiquetaId:string;multinodo?:boolean;}
@@ -22,7 +23,7 @@ export class MiRedPage implements OnInit,OnDestroy {
  labels:Record<string,{nombre:string;color:string}>={};view:'grafica'|'tabla'|'comunidad'='grafica';search='';page=1;pageSize=10;
  stats:Record<string,{votos:number;directos:number;profundidad:number}>={};meetingStats:Record<string,{cantidad:number;personas:number}>={};statsReady=false;
  loading=true;branchLoading=false;peopleLoading=false;error='';menuOpen=false;detail:Leader|null=null;actionsFor:Leader|null=null;notesFor:Leader|null=null;notes:Array<{id:string;texto:string;fecha:Date|null}>=[];noteText='';editingNoteId='';notesBusy=false;peopleOwner:string|null=null;message='';
- leaderFormOpen=false;leaderFromPerson:Person|null=null;leaderParentId:string|null=null;leaderBusy=false;leaderForm={nombre:'',apellido:'',email:'',telefono:'',identificacion:'',departamento:'',ciudad:'',edad:'',password:'',multinodo:true,etiquetaId:'',estimacionVotos:0};
+ leaderFormOpen=false;leaderFromPerson:Person|null=null;leaderParentId:string|null=null;leaderBusy=false;leaderPhoto:File|null=null;leaderPhotoPreview='';leaderForm={nombre:'',apellido:'',email:'',telefono:'',identificacion:'',departamento:'',ciudad:'',edad:'',password:'',multinodo:true,etiquetaId:'',estimacionVotos:0};
  personFormOpen=false;personBusy=false;personOwner:string|null=null;personForm={nombre:'',apellido:'',email:'',telefono:'',identificacion:'',departamento:'',ciudad:'',etiquetaId:'',observaciones:'',fechaReunion:'',lugarReunion:''};catalog:Record<string,Record<string,unknown>>={};catalogError='';meetingsData:Array<{id:string;responsableId:string|null;fecha:string;lugar:string;estado:string;cantidad:number}>=[];
  get labelEntries():Array<{key:string;value:{nombre:string;color:string}}>{return Object.entries(this.labels).map(([key,value])=>({key,value}));}
  get departments():string[]{return Object.keys(this.catalog).sort((a,b)=>a.localeCompare(b,'es'));}
@@ -122,9 +123,20 @@ export class MiRedPage implements OnInit,OnDestroy {
   if(!this.isOwner && (!parent||parent===this.rootId&&this.focus?.multinodo===false)){
    this.message='Este responsable no tiene habilitada la creación de líderes.';return;
   }
-  this.actionsFor=null;this.leaderFromPerson=person;this.leaderParentId=parent;
+  this.actionsFor=null;this.leaderFromPerson=person;this.leaderParentId=parent;this.leaderPhoto=null;this.leaderPhotoPreview='';
   this.leaderForm={nombre:person?.nombre||'',apellido:person?.apellido||'',email:person?.email||'',telefono:person?.telefono||'',identificacion:person?.identificacion||'',departamento:person?.departamento||'',ciudad:person?.ciudad||'',edad:'',password:'',multinodo:true,etiquetaId:person?.etiquetaId||Object.keys(this.labels)[0]||'',estimacionVotos:0};
   this.error='';this.message='';this.leaderFormOpen=true;
+ }
+ onLeaderPhoto(event:Event):void{
+  const file=(event.target as HTMLInputElement).files?.[0]||null;
+  if(!file){this.leaderPhoto=null;this.leaderPhotoPreview='';return;}
+  if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>2*1024*1024){
+   this.error='La foto debe ser JPG, PNG o WebP y pesar máximo 2 MB.';this.leaderPhoto=null;this.leaderPhotoPreview='';return;
+  }
+  this.leaderPhoto=file;this.error='';
+  const reader=new FileReader();
+  reader.onload=()=>this.leaderPhotoPreview=typeof reader.result==='string'?reader.result:'';
+  reader.readAsDataURL(file);
  }
  openInviteLeader(person:Person):void{this.openLeaderForm(this.peopleOwner,person);}
  get leaderCities():string[]{return Object.keys(this.catalog[this.leaderForm.departamento]||{}).sort((a,b)=>a.localeCompare(b,'es'));}
@@ -187,15 +199,17 @@ export class MiRedPage implements OnInit,OnDestroy {
    const credential=await createUserWithEmailAndPassword(secondaryAuth,email,f.password);
    createdUid=credential.user.uid;
    const nodeRef=doc(nodes),batch=writeBatch(db);
+   let fotoUrl='';
+   if(this.leaderPhoto){const photoRef=storageRef(storage,'clientes/'+p.clienteId+'/campanas/'+this.campaignId+'/lideres/'+nodeRef.id+'/foto-'+Date.now());await uploadBytes(photoRef,this.leaderPhoto,{contentType:this.leaderPhoto.type});fotoUrl=await getDownloadURL(photoRef);}
    const payload={nombre:f.nombre.trim(),apellido:f.apellido.trim(),telefono:f.telefono.trim(),identificacion:f.identificacion.trim(),departamento:f.departamento.trim(),ciudad:f.ciudad.trim(),edad:f.edad?Number(f.edad):null,etiquetaId:f.etiquetaId};
-   batch.set(nodeRef,{...payload,multinodo:f.multinodo,estimacionVotos:estimate,votosEstimadosSubarbol:estimate,votosRealesSubarbol:0,email,campanaId:this.campaignId,padreId:parent,nivel:level,uid:createdUid,estado:'activo',creadoEn:serverTimestamp(),actualizadoEn:serverTimestamp()});
+   batch.set(nodeRef,{...payload,fotoUrl,multinodo:f.multinodo,estimacionVotos:estimate,votosEstimadosSubarbol:estimate,votosRealesSubarbol:0,email,campanaId:this.campaignId,padreId:parent,nivel:level,uid:createdUid,estado:'activo',creadoEn:serverTimestamp(),actualizadoEn:serverTimestamp()});
    batch.set(doc(db,'usuarios',createdUid),{uid:createdUid,email,nombre:payload.nombre,apellido:payload.apellido,rol:'red_usuario',estado:'activo',clienteId:p.clienteId,campanaId:this.campaignId,nodoId:nodeRef.id,creadoEn:serverTimestamp()});
    for(const id of ancestors)batch.update(doc(nodes,id),{votosEstimadosSubarbol:increment(estimate)});
    batch.set(doc(base,'metricas','red'),{votosEstimados:increment(estimate)},{merge:true});
    await batch.commit();
    let verificationSent=false;
    try{await sendEmailVerification(credential.user);verificationSent=true;}catch(e){console.warn('No se pudo enviar verificación al nuevo líder',e);}
-   this.leaderFormOpen=false;this.leaderFromPerson=null;this.leaderForm.password='';
+   this.leaderFormOpen=false;this.leaderFromPerson=null;this.leaderForm.password='';this.leaderPhoto=null;this.leaderPhotoPreview='';
    this.message=verificationSent?'Líder y cuenta creados. Se envió un correo de verificación.':'Líder y cuenta creados, pero no se pudo enviar el correo de verificación. Puede solicitarlo desde Login.';
   }catch(e){
    console.error('No se pudo crear líder',e);

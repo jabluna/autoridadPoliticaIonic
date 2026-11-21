@@ -14,6 +14,7 @@ import {
   personCircleOutline, pulseOutline, settingsOutline, mailOutline, folderOutline, imagesOutline
 } from 'ionicons/icons';
 import { AuthService } from '../../core/auth.service';
+import { ThemeService } from '../../core/theme.service';
 import { db } from '../../core/firebase';
 
 type CampaignSummary = {
@@ -49,6 +50,8 @@ const EMPTY_METRICS: NetworkMetrics = {
 })
 export class DashboardPage implements OnInit {
   readonly profile = this.access.profile;
+  readonly currentTheme = this.theme.theme;
+  toggleTheme(): void { this.theme.toggle(); }
   loadingCampaigns = true;
   loggingOut = false;
   refreshing = false;
@@ -67,13 +70,13 @@ export class DashboardPage implements OnInit {
   menuOpen = false;
   activeTab: 'resumen' | 'lideres' | 'avisos' = 'resumen';
 
-  constructor(private readonly access: AuthService, private readonly router: Router) {
+  constructor(private readonly access: AuthService, private readonly router: Router, readonly theme: ThemeService) {
     addIcons({
       checkmarkCircleOutline, gridOutline, layersOutline, logOutOutline,
       peopleOutline, shieldCheckmarkOutline, notificationsOutline, refreshOutline,
       searchOutline, trendingUpOutline, statsChartOutline, chevronBackOutline,
       chevronForwardOutline, closeOutline, locationOutline, menuOutline,
-      personCircleOutline, pulseOutline
+      personCircleOutline, pulseOutline, settingsOutline, mailOutline, folderOutline, imagesOutline
     });
   }
 

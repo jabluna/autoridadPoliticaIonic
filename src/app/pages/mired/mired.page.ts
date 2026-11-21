@@ -8,6 +8,9 @@ import { collection, doc, getDoc, getDocs, limit, onSnapshot, query, where, setD
 import { AuthService } from '../../core/auth.service';
 import { db, rtdb } from '../../core/firebase';
 import { get, ref } from 'firebase/database';
+import { initializeApp, deleteApp } from 'firebase/app';
+import { getAuth, createUserWithEmailAndPassword, sendEmailVerification, signOut } from 'firebase/auth';
+import { firebaseConfig } from '../../core/firebase';
 
 interface Campaign {id:string;nombreCampana:string;estado:string;}
 interface Leader {puntuacion?:number;id:string;nombre:string;apellido:string;email:string;telefono:string;ciudad:string;departamento:string;padreId:string|null;nivel:number;estado:string;fotoUrl?:string;estimacionVotos:number;votosEstimadosSubarbol:number;votosRealesSubarbol:number;etiquetaId:string;multinodo?:boolean;}
@@ -15,11 +18,11 @@ interface Person {identificacion?:string;departamento?:string;responsableId?:str
 @Component({selector:'app-mi-red',standalone:true,imports:[FormsModule,IonContent,IonIcon,IonSpinner],templateUrl:'./mired.page.html',styleUrls:['./mired.page.scss']})
 export class MiRedPage implements OnInit,OnDestroy {
  readonly profile=this.access.profile;
- campaigns:Campaign[]=[];campaignId='';rootName='';focusId:string|null=null;focus:Leader|null=null;leaders:Leader[]=[];people:Person[]=[];
+ levelsAllowed=1;campaigns:Campaign[]=[];campaignId='';rootName='';focusId:string|null=null;focus:Leader|null=null;leaders:Leader[]=[];people:Person[]=[];
  labels:Record<string,{nombre:string;color:string}>={};view:'grafica'|'tabla'|'comunidad'='grafica';search='';page=1;pageSize=10;
  stats:Record<string,{votos:number;directos:number;profundidad:number}>={};meetingStats:Record<string,{cantidad:number;personas:number}>={};statsReady=false;
  loading=true;branchLoading=false;peopleLoading=false;error='';menuOpen=false;detail:Leader|null=null;actionsFor:Leader|null=null;notesFor:Leader|null=null;notes:Array<{id:string;texto:string;fecha:Date|null}>=[];noteText='';editingNoteId='';notesBusy=false;peopleOwner:string|null=null;message='';
- leaderFormOpen=false;leaderFromPerson:Person|null=null;leaderBusy=false;leaderForm={nombre:'',apellido:'',email:'',telefono:'',identificacion:'',departamento:'',ciudad:'',edad:'',password:'',multinodo:true,etiquetaId:'',estimacionVotos:0};
+ leaderFormOpen=false;leaderFromPerson:Person|null=null;leaderParentId:string|null=null;leaderBusy=false;leaderForm={nombre:'',apellido:'',email:'',telefono:'',identificacion:'',departamento:'',ciudad:'',edad:'',password:'',multinodo:true,etiquetaId:'',estimacionVotos:0};
  personFormOpen=false;personBusy=false;personOwner:string|null=null;personForm={nombre:'',apellido:'',email:'',telefono:'',identificacion:'',departamento:'',ciudad:'',etiquetaId:'',observaciones:'',fechaReunion:'',lugarReunion:''};catalog:Record<string,Record<string,unknown>>={};catalogError='';meetingsData:Array<{id:string;responsableId:string|null;fecha:string;lugar:string;estado:string;cantidad:number}>=[];
  get labelEntries():Array<{key:string;value:{nombre:string;color:string}}>{return Object.entries(this.labels).map(([key,value])=>({key,value}));}
  get departments():string[]{return Object.keys(this.catalog).sort((a,b)=>a.localeCompare(b,'es'));}
@@ -56,7 +59,7 @@ export class MiRedPage implements OnInit,OnDestroy {
   const p=this.profile();if(!p){this.error='No hay sesión activa.';this.loading=false;return;}
   this.loading=true;this.error='';
   try{
-   const client=await getDoc(doc(db,'clientes',p.clienteId));this.rootName=String(client.data()?.['responsable']||client.data()?.['nombreCliente']||p.clienteNombre);
+   const client=await getDoc(doc(db,'clientes',p.clienteId));this.rootName=String(client.data()?.['responsable']||client.data()?.['nombreCliente']||p.clienteNombre);this.levelsAllowed=Math.max(1,Number(client.data()?.['nivelesRed']||1));
    if(this.isOwner){const snap=await getDocs(collection(db,'clientes',p.clienteId,'campanas'));this.campaigns=snap.docs.map(x=>({id:x.id,nombreCampana:String(x.data()['nombreCampana']||x.id),estado:String(x.data()['estado']||'inactiva')}));}
    else{this.campaigns=[{id:p.campanaId||'',nombreCampana:'Mi campaña',estado:'activa'}];}
    const labelsRef=collection(db,'clientes',p.clienteId,'etiquetasNodo');
@@ -113,17 +116,98 @@ export class MiRedPage implements OnInit,OnDestroy {
  async saveNote():Promise<void>{const p=this.profile(),n=this.notesFor;if(!p||!n||!this.noteText.trim()||this.notesBusy)return;this.notesBusy=true;try{const col=collection(db,'clientes',p.clienteId,'campanas',this.campaignId,'nodos',n.id,'notas');if(this.editingNoteId)await updateDoc(doc(col,this.editingNoteId),{texto:this.noteText.trim(),fechaEdicion:serverTimestamp()});else await setDoc(doc(col),{texto:this.noteText.trim(),fecha:serverTimestamp(),autorUid:p.uid||''});await this.openNotes(n);this.message='Comentario guardado.';}catch{this.error='No se pudo guardar el comentario.';}finally{this.notesBusy=false;}}
  async deleteNote(id:string):Promise<void>{const p=this.profile(),n=this.notesFor;if(!p||!n||this.notesBusy||!confirm('¿Eliminar este comentario?'))return;this.notesBusy=true;try{await deleteDoc(doc(db,'clientes',p.clienteId,'campanas',this.campaignId,'nodos',n.id,'notas',id));this.notes=this.notes.filter(x=>x.id!==id);this.message='Comentario eliminado.';}catch{this.error='No se pudo eliminar el comentario.';}finally{this.notesBusy=false;}}
  share(n:Leader):void{this.actionsFor=null;const votos=n.id==='gerencia'?this.leaders.reduce((sum,leader)=>sum+this.stat(leader).votos,0):this.stat(n).votos,estimado=Number(n.estimacionVotos||0);const msg='Resumen de la red de '+this.fullName(n)+'\\nVotos de la red: '+this.format(votos)+'\\nEstimado: '+this.format(estimado)+'\\nDiferencia: '+this.format(estimado-votos)+'\\nFecha: '+new Date().toLocaleString('es-CO');window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank','noopener,noreferrer');}
- openInviteLeader(person:Person):void{
-  if(!this.canInviteLeader){this.message='Este líder no tiene habilitada la creación de otros líderes.';return;}
-  this.leaderFromPerson=person;
-  this.leaderForm={nombre:person.nombre||'',apellido:person.apellido||'',email:person.email||'',telefono:person.telefono||'',identificacion:person.identificacion||'',departamento:person.departamento||'',ciudad:person.ciudad||'',edad:'',password:'',multinodo:true,etiquetaId:person.etiquetaId||Object.keys(this.labels)[0]||'',estimacionVotos:0};
-  this.leaderFormOpen=true;this.error='';
+ openLeaderForm(parent:string|null=this.focusId,person:Person|null=null):void{
+  const p=this.profile();
+  if(!p||!this.campaignId)return;
+  if(!this.isOwner && (!parent||parent===this.rootId&&this.focus?.multinodo===false)){
+   this.message='Este responsable no tiene habilitada la creación de líderes.';return;
+  }
+  this.actionsFor=null;this.leaderFromPerson=person;this.leaderParentId=parent;
+  this.leaderForm={nombre:person?.nombre||'',apellido:person?.apellido||'',email:person?.email||'',telefono:person?.telefono||'',identificacion:person?.identificacion||'',departamento:person?.departamento||'',ciudad:person?.ciudad||'',edad:'',password:'',multinodo:true,etiquetaId:person?.etiquetaId||Object.keys(this.labels)[0]||'',estimacionVotos:0};
+  this.error='';this.message='';this.leaderFormOpen=true;
  }
+ openInviteLeader(person:Person):void{this.openLeaderForm(this.peopleOwner,person);}
  get leaderCities():string[]{return Object.keys(this.catalog[this.leaderForm.departamento]||{}).sort((a,b)=>a.localeCompare(b,'es'));}
  async submitLeaderInvitation():Promise<void>{
-  if(!this.leaderForm.nombre.trim()||!this.leaderForm.apellido.trim()||!this.leaderForm.email.trim()||!this.leaderForm.etiquetaId){this.error='Nombre, apellido, correo y etiqueta son obligatorios.';return;}
-  if(this.leaderForm.password.length<6){this.error='La contraseña inicial debe tener al menos 6 caracteres.';return;}
-  this.error='La creación de líderes sigue bloqueada en la versión web hasta habilitar las reglas de seguridad por subárbol. No se ha creado ninguna cuenta ni nodo.';
+  const p=this.profile(),f=this.leaderForm,parent=this.leaderParentId;
+  if(!p||!this.campaignId||this.leaderBusy)return;
+  this.error='';
+  if(!this.isOwner&& !parent){this.error='Un líder solo puede registrar descendientes de su red.';return;}
+  if(!f.nombre.trim()||!f.apellido.trim()||!f.email.trim()||!f.etiquetaId||!this.labels[f.etiquetaId]){
+   this.error='Nombre, apellido, correo y etiqueta válida son obligatorios.';return;
+  }
+  if(f.password.length<6){this.error='La contraseña inicial debe tener al menos seis caracteres.';return;}
+  const estimate=Number(f.estimacionVotos);
+  if(!Number.isSafeInteger(estimate)||estimate<0){this.error='La estimación debe ser un entero no negativo.';return;}
+  if(f.edad&&( !Number.isInteger(Number(f.edad))||Number(f.edad)<18||Number(f.edad)>120)){
+   this.error='Ingresa una edad válida entre 18 y 120 años.';return;
+  }
+  this.leaderBusy=true;
+  let secondary:ReturnType<typeof initializeApp>|null=null;
+  let createdUid='';
+  try{
+   const base=doc(db,'clientes',p.clienteId,'campanas',this.campaignId);
+   const nodes=collection(base,'nodos');
+   let parentLevel=1;
+   if(parent){
+    const parentSnap=await getDoc(doc(nodes,parent));
+    if(!parentSnap.exists()||parentSnap.data()['estado']==='inactivo')throw Error('El responsable no está disponible.');
+    if(parentSnap.data()['multinodo']===false)throw Error('Este responsable no tiene habilitado multinodo.');
+    parentLevel=Number(parentSnap.data()['nivel']||1);
+   }
+   if(!this.isOwner){
+    const rootId=this.rootId;
+    if(!rootId||!parent)throw Error('No tienes un nodo habilitado para registrar líderes.');
+    const seen=new Set<string>();let cursor:string|null=parent,authorized=false;
+    while(cursor){
+     if(seen.has(cursor)||seen.size>30)throw Error('Jerarquía inconsistente.');
+     seen.add(cursor);
+     if(cursor===rootId){authorized=true;break;}
+     const snap=await getDoc(doc(nodes,cursor));
+     if(!snap.exists()||snap.data()['estado']==='inactivo')break;
+     cursor=String(snap.data()['padreId']||'')||null;
+    }
+    if(!authorized)throw Error('Solo puedes crear líderes dentro de tu propia red.');
+   }
+   const level=parentLevel+1;
+   if(level>this.levelsAllowed)throw Error('Se alcanzó el máximo de '+this.levelsAllowed+' niveles contratados.');
+   const siblings=await getDocs(query(nodes,where('padreId','==',parent),limit(11)));
+   if(siblings.docs.filter(d=>d.data()['estado']!=='inactivo').length>=10)throw Error('Este responsable ya tiene diez líderes directos.');
+   const ancestors:string[]=[],seen=new Set<string>();let cursor=parent;
+   while(cursor){
+    if(seen.has(cursor)||ancestors.length>30)throw Error('Jerarquía inconsistente.');
+    seen.add(cursor);ancestors.push(cursor);
+    const snap=await getDoc(doc(nodes,cursor));
+    if(!snap.exists()||snap.data()['estado']==='inactivo')throw Error('No se encontró un antecesor activo.');
+    cursor=String(snap.data()['padreId']||'')||null;
+   }
+   secondary=initializeApp(firebaseConfig,'crear-lider-'+Date.now()+'-'+Math.random().toString(36).slice(2));
+   const secondaryAuth=getAuth(secondary);
+   const email=f.email.trim().toLowerCase();
+   const credential=await createUserWithEmailAndPassword(secondaryAuth,email,f.password);
+   createdUid=credential.user.uid;
+   const nodeRef=doc(nodes),batch=writeBatch(db);
+   const payload={nombre:f.nombre.trim(),apellido:f.apellido.trim(),telefono:f.telefono.trim(),identificacion:f.identificacion.trim(),departamento:f.departamento.trim(),ciudad:f.ciudad.trim(),edad:f.edad?Number(f.edad):null,etiquetaId:f.etiquetaId};
+   batch.set(nodeRef,{...payload,multinodo:f.multinodo,estimacionVotos:estimate,votosEstimadosSubarbol:estimate,votosRealesSubarbol:0,email,campanaId:this.campaignId,padreId:parent,nivel:level,uid:createdUid,estado:'activo',creadoEn:serverTimestamp(),actualizadoEn:serverTimestamp()});
+   batch.set(doc(db,'usuarios',createdUid),{uid:createdUid,email,nombre:payload.nombre,apellido:payload.apellido,rol:'red_usuario',estado:'activo',clienteId:p.clienteId,campanaId:this.campaignId,nodoId:nodeRef.id,creadoEn:serverTimestamp()});
+   for(const id of ancestors)batch.update(doc(nodes,id),{votosEstimadosSubarbol:increment(estimate)});
+   batch.set(doc(base,'metricas','red'),{votosEstimados:increment(estimate)},{merge:true});
+   await batch.commit();
+   let verificationSent=false;
+   try{await sendEmailVerification(credential.user);verificationSent=true;}catch(e){console.warn('No se pudo enviar verificación al nuevo líder',e);}
+   this.leaderFormOpen=false;this.leaderFromPerson=null;this.leaderForm.password='';
+   this.message=verificationSent?'Líder y cuenta creados. Se envió un correo de verificación.':'Líder y cuenta creados, pero no se pudo enviar el correo de verificación. Puede solicitarlo desde Login.';
+  }catch(e){
+   console.error('No se pudo crear líder',e);
+   this.error=(createdUid?'Authentication pudo crear una cuenta sin finalizar Firestore. Comprueba el usuario antes de volver a intentar. ':'')+(e instanceof Error?e.message:'No fue posible crear el líder.');
+  }finally{
+   if(secondary){
+    const instance=getAuth(secondary);
+    await signOut(instance).catch(()=>undefined);
+    await deleteApp(secondary).catch(()=>undefined);
+   }
+   this.leaderBusy=false;
+  }
  }
  async loadCatalog():Promise<void>{try{const s=await get(ref(rtdb,'MUNICIPIOPUESTOS'));this.catalog=s.exists()?s.val():{};}catch{this.catalogError='No se pudieron cargar los departamentos y municipios.';}}
  openPersonForm(n:Leader):void{

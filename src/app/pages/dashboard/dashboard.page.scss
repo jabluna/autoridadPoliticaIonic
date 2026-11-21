@@ -189,3 +189,26 @@
 .bottom-nav{display:flex}
 .dashboard-footer{display:none}
 }
+
+
+:host-context(.app-light){color:#173b2b}
+:host-context(.app-light) .dashboard-screen{--background:#f3f8fc}
+:host-context(.app-light) .dashboard-shell{background:radial-gradient(ellipse at 95% 0,rgba(56,155,125,.11),transparent 52%),#f3f8fc}
+:host-context(.app-light) .dashboard-shell :is(h1,h2,h3,strong){color:#183c2d}
+:host-context(.app-light) .dashboard-shell :is(p,small){color:#547267}
+:host-context(.app-light) .dashboard-topbar{border-color:#c9e1d7}
+:host-context(.app-light) .brand-button{color:#173b2b}
+:host-context(.app-light) .header-icon{background:#fff;color:#216d51;border-color:#c8ded2}
+:host-context(.app-light) .theme-toggle{background:#e4f5eb;color:#156a44}
+:host-context(.app-light) .dashboard-shell :is(input,select,textarea){background:#fff;color:#193b2c;border-color:#bed9cc}
+:host-context(.app-light) .dashboard-shell :is(.drawer,.drawer-panel,.notifications-modal){background:#fff;color:#193b2c}
+:host-context(.app-light) .dashboard-shell :is(.dashboard-card,.metric-card,.stat-card,.campaign-card,.leader-card,.projection-card,.notice-item){background:#fff;color:#193b2c;border-color:#d4e6dc}
+:host-context(.app-light) .dashboard-shell :is(.mobile-tabs,.dashboard-footer){background:#eaf4ee;color:#24523b;border-color:#c8dfd0}
+:host-context(.app-light) .dashboard-shell .welcome-section h1 span{color:#168353}
+:host-context(.app-light) .dashboard-shell .welcome-tag{color:#207d52}
+:host-context(.app-light) .dashboard-shell .welcome-section p{color:#527567}
+:host-context(.app-light) .dashboard-shell .dashboard-brand__copy small{color:#547b65}
+:host-context(.app-light) .drawer-theme{border:1px solid #c6e0d1;background:#eff8f2;color:#245b40}
+:host-context(.app-light) .drawer-theme button{background:#fff;color:#1b704b;border:1px solid #b8d9c4}
+.drawer-theme{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:10px 0;padding:12px;border-radius:12px;background:#153d2b;color:#bde9cd;font-size:12px}
+.drawer-theme button{background:#275c3e;border:1px solid #4e9368;color:#e5ffed;border-radius:9px;padding:9px 12px;font-size:11px}

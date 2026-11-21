@@ -9,13 +9,14 @@ import { AuthService } from '../../core/auth.service';
 import { db } from '../../core/firebase';
 
 interface Campaign {id:string;nombreCampana:string;estado:string;}
-interface Leader {id:string;nombre:string;apellido:string;email:string;telefono:string;ciudad:string;departamento:string;padreId:string|null;nivel:number;estado:string;fotoUrl?:string;estimacionVotos:number;votosEstimadosSubarbol:number;votosRealesSubarbol:number;etiquetaId:string;multinodo?:boolean;}
+interface Leader {puntuacion?:number;id:string;nombre:string;apellido:string;email:string;telefono:string;ciudad:string;departamento:string;padreId:string|null;nivel:number;estado:string;fotoUrl?:string;estimacionVotos:number;votosEstimadosSubarbol:number;votosRealesSubarbol:number;etiquetaId:string;multinodo?:boolean;}
 interface Person {id:string;nombre:string;apellido:string;telefono:string;email:string;ciudad:string;etiquetaId:string;observaciones:string;}
 @Component({selector:'app-mi-red',standalone:true,imports:[FormsModule,IonContent,IonIcon,IonSpinner],templateUrl:'./mired.page.html',styleUrls:['./mired.page.scss']})
 export class MiRedPage implements OnInit,OnDestroy {
  readonly profile=this.access.profile;
  campaigns:Campaign[]=[];campaignId='';rootName='';focusId:string|null=null;focus:Leader|null=null;leaders:Leader[]=[];people:Person[]=[];
  labels:Record<string,{nombre:string;color:string}>={};view:'grafica'|'tabla'|'comunidad'='grafica';search='';page=1;pageSize=10;
+ stats:Record<string,{votos:number;directos:number;profundidad:number}>={};meetingStats:Record<string,{cantidad:number;personas:number}>={};statsReady=false;
  loading=true;branchLoading=false;peopleLoading=false;error='';menuOpen=false;detail:Leader|null=null;
  private subscriptions:Unsubscribe[]=[];private branchSubs:Unsubscribe[]=[];
  constructor(private readonly access:AuthService,private readonly router:Router){addIcons({arrowBackOutline,chevronBackOutline,chevronForwardOutline,peopleOutline,personAddOutline,searchOutline,layersOutline,gridOutline,listOutline,closeOutline,refreshOutline,locationOutline,callOutline,mailOutline,menuOutline,personOutline});}
@@ -29,6 +30,10 @@ export class MiRedPage implements OnInit,OnDestroy {
  get ownerName():string{return this.focus?this.fullName(this.focus):this.rootName;}
  get totalEstimate():number{return this.leaders.reduce((n,x)=>n+Number(x.estimacionVotos||0),0);}
  fullName(x:{nombre:string;apellido:string}):string{return [x.nombre,x.apellido].filter(Boolean).join(' ').trim();}
+ stat(n:Leader){return this.stats[n.id]||{votos:0,directos:0,profundidad:0};}
+ gap(n:Leader){return Number(n.estimacionVotos||0)-this.stat(n).votos;}
+ progress(n:Leader){return Number(n.estimacionVotos)>0?Math.round(this.stat(n).votos/Number(n.estimacionVotos)*100):0;}
+ meetings(id:string|null){return this.meetingStats[id||'root']||{cantidad:0,personas:0};}
  format(n:number):string{return new Intl.NumberFormat('es-CO').format(n||0);}
  label(id:string):string{return this.labels[id]?.nombre||'Sin etiqueta';}
  ngOnInit():void{void this.load();}
@@ -48,7 +53,29 @@ export class MiRedPage implements OnInit,OnDestroy {
   }catch(e){console.error(e);this.error='No fue posible cargar la red. Revisa los permisos de Firebase.';}
   finally{this.loading=false;}
  }
- selectCampaign(id:string):void{this.campaignId=id;this.openNode(this.rootId);}
+ selectCampaign(id:string):void{
+  this.campaignId=id;this.clearBranch();this.subscriptions.forEach(u=>u());this.subscriptions=[];this.statsReady=false;this.stats={};this.meetingStats={};
+  const p=this.profile();if(!p||!id)return;
+  const base=collection(db,'clientes',p.clienteId,'campanas',id,'nodos');
+  this.subscriptions.push(onSnapshot(query(base,limit(5001)),snap=>{
+   if(snap.size>5000){this.statsReady=false;this.error='La red supera 5.000 líderes; el cálculo debe realizarse en el servidor.';return;}
+   const active=snap.docs.map(d=>({...d.data(),id:d.id} as Leader)).filter(n=>n.estado!=='inactivo');
+   const byParent=new Map<string,Leader[]>();for(const n of active){const key=n.padreId||'';byParent.set(key,[...(byParent.get(key)||[]),n]);}
+   const computed:typeof this.stats={};const visiting=new Set<string>();
+   const compute=(n:Leader):{votos:number;directos:number;profundidad:number}=>{
+    if(computed[n.id])return computed[n.id];if(visiting.has(n.id))throw Error('Jerarquía circular detectada.');
+    visiting.add(n.id);const direct=byParent.get(n.id)||[];let votos=n.multinodo===false?Math.max(1,Number(n.estimacionVotos)||1):1;let profundidad=0;
+    for(const child of direct){const stat=compute(child);votos+=stat.votos;profundidad=Math.max(profundidad,1+stat.profundidad);}
+    visiting.delete(n.id);return computed[n.id]={votos,directos:direct.length,profundidad};
+   };
+   try{for(const n of active)compute(n);this.stats=computed;this.statsReady=true;}
+   catch(e){this.statsReady=false;this.error=e instanceof Error?e.message:'Error calculando la red.';}
+  },()=>{this.error='No se pudo calcular la estructura de la red.';}));
+  this.subscriptions.push(onSnapshot(query(collection(db,'clientes',p.clienteId,'campanas',id,'reuniones'),limit(5001)),snap=>{
+   const result:typeof this.meetingStats={};for(const row of snap.docs){const data=row.data();const key=String(data['responsableId']||'root');const old=result[key]||{cantidad:0,personas:0};result[key]={cantidad:old.cantidad+1,personas:old.personas+Number(data['cantidad']||0)};}this.meetingStats=result;
+  },()=>{this.error='No se pudieron cargar las reuniones.';}));
+  this.openNode(this.rootId);
+ }
  openNode(id:string|null):void{
   const p=this.profile();if(!p||!this.campaignId)return;
   if(!this.isOwner&&id===null)return;

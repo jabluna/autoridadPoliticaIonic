@@ -40,7 +40,7 @@ export class ConfiguracionCampanaPage implements OnInit {
   }
   ngOnInit():void { void this.load(); }
   get isOwner():boolean{return this.profile()?.rol==='cliente_admin';}
-  get departments():string[]{return Object.keys(this.catalog).sort((a,b)=>a.localeCompare(b,'es'));}
+  get activeCampaignCount():number{return this.campaigns.filter(c=>c.estado==='activa').length;}\n  get departments():string[]{return Object.keys(this.catalog).sort((a,b)=>a.localeCompare(b,'es'));}
   get municipalities():string[]{return Object.keys(this.catalog[this.form.departamento]||{}).sort((a,b)=>a.localeCompare(b,'es'));}
   get votingPlaces():{name:string;mesas:number}[]{return Object.entries(this.catalog[this.form.departamento]?.[this.form.municipio]||{}).map(([name,raw])=>({name,mesas:Number(raw)||0})).sort((a,b)=>a.name.localeCompare(b.name,'es'));}
   get totalSteps():number{return this.form.tipo==='municipal'?5:4;}

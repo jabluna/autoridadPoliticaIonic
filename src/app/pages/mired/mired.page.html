@@ -1,0 +1,45 @@
+<ion-content [fullscreen]="true" class="network-screen">
+<div class="network-shell">
+<header class="topbar"><button class="icon-button" (click)="menuOpen=true" aria-label="Abrir menú"><ion-icon name="menu-outline"></ion-icon></button><div><strong>AUTORIDAD POLÍTICA</strong><small>GESTIÓN DE MULTIRED</small></div><button class="icon-button" (click)="load()" aria-label="Actualizar"><ion-icon name="refresh-outline"></ion-icon></button></header>
+<main>
+<section class="hero"><span class="eyebrow">CENTRO DE OPERACIONES</span><h1>Mi <em>red</em></h1><p>Explora tus líderes, sus grupos de trabajo y la comunidad vinculada a cada nodo.</p></section>
+@if(error){<div class="alert" role="alert">{{error}}</div>}
+@if(loading){<div class="loading"><ion-spinner></ion-spinner> Sincronizando la red...</div>}
+@else{
+<section class="campaign-selector"><label>CAMPAÑA ACTIVA<select [ngModel]="campaignId" (ngModelChange)="selectCampaign($event)">@for(c of campaigns;track c.id){<option [value]="c.id">{{c.nombreCampana}} · {{c.estado}}</option>}</select></label><span class="campaign-count">{{campaigns.length}} campañas</span></section>
+@if(!campaignId){<div class="empty">No hay campañas asociadas a esta cuenta.</div>}
+@else{
+<section class="summary-grid"><div><ion-icon name="people-outline"></ion-icon><span>Líderes directos</span><strong>{{format(leaders.length)}}</strong></div><div><ion-icon name="layers-outline"></ion-icon><span>Estimado directo</span><strong>{{format(totalEstimate)}}</strong></div><div><ion-icon name="person-outline"></ion-icon><span>Responsable actual</span><strong class="small-strong">{{ownerName}}</strong></div></section>
+<section class="network-panel">
+<div class="panel-heading"><div><span class="eyebrow">ESTRUCTURA DE CAMPAÑA</span><h2>{{ownerName}}</h2></div><button class="back-button" (click)="parent()" [disabled]="!focusId||(!isOwner&&focusId===rootId)"><ion-icon name="chevron-back-outline"></ion-icon> Subir nivel</button></div>
+<div class="view-tabs"><button [class.active]="view==='grafica'" (click)="changeView('grafica')"><ion-icon name="grid-outline"></ion-icon> Gráfica</button><button [class.active]="view==='tabla'" (click)="changeView('tabla')"><ion-icon name="list-outline"></ion-icon> Directorio</button><button [class.active]="view==='comunidad'" (click)="changeView('comunidad')"><ion-icon name="people-outline"></ion-icon> Comunidad</button></div>
+@if(view!=='grafica'){<label class="search"><ion-icon name="search-outline"></ion-icon><input [(ngModel)]="search" (ngModelChange)="page=1" placeholder="Buscar por nombre, ciudad o teléfono" aria-label="Buscar"></label>}
+@if(branchLoading){<div class="loading"><ion-spinner></ion-spinner> Cargando líderes...</div>}
+@else if(view==='grafica'){
+<div class="tree-root"><div class="root-avatar">{{ownerName.slice(0,1).toUpperCase()}}</div><div><strong>{{ownerName}}</strong><span>{{focus?'Nivel '+focus.nivel:'Gerencia · Nivel 1'}}</span></div><button (click)="showPeople()">Ver comunidad</button></div>
+<div class="tree-connector"></div>
+<div class="leader-grid">
+@for(n of leaders;track n.id){
+<article class="leader-card"><div class="leader-card-head">@if(n.fotoUrl){<img [src]="n.fotoUrl" alt="Fotografía del líder">}@else{<span class="avatar">{{n.nombre.slice(0,1).toUpperCase()}}{{n.apellido.slice(0,1).toUpperCase()}}</span>}<div><strong>{{fullName(n)}}</strong><span>Nivel {{n.nivel}} · {{n.ciudad||'Sin ciudad'}}</span></div></div>
+<div class="leader-stats"><span>Estimado <b>{{format(n.estimacionVotos||0)}}</b></span><span>Subárbol <b>{{format(n.votosEstimadosSubarbol||0)}}</b></span></div>
+<div class="leader-actions"><button (click)="detail=n">Ficha</button><button class="green-button" (click)="openNode(n.id)">Ver su red <ion-icon name="chevron-forward-outline"></ion-icon></button></div></article>
+}@empty{<div class="empty">Este responsable no tiene líderes directos registrados.</div>}
+</div>
+}
+@if(view==='tabla'){
+<div class="directory-list">@for(n of pagedLeaders;track n.id){<button class="directory-item" (click)="detail=n"><span class="avatar">{{n.nombre.slice(0,1).toUpperCase()}}</span><div><strong>{{fullName(n)}}</strong><small>{{n.ciudad||'Sin ciudad'}} · Nivel {{n.nivel}}</small></div><span class="amount">{{format(n.estimacionVotos||0)}}</span><ion-icon name="chevron-forward-outline"></ion-icon></button>}@empty{<div class="empty">No hay líderes que coincidan con la búsqueda.</div>}</div>
+<div class="pagination"><span>{{visibleLeaders.length}} líderes · Página {{page}} de {{totalPages}}</span><div><button [disabled]="page===1" (click)="previous()">Anterior</button><button [disabled]="page===totalPages" (click)="next()">Siguiente</button></div></div>
+}
+@if(view==='comunidad'){
+@if(peopleLoading){<div class="loading"><ion-spinner></ion-spinner> Cargando comunidad...</div>}
+@else{<div class="directory-list">@for(p of visiblePeople;track p.id){<div class="directory-item"><span class="avatar">{{p.nombre.slice(0,1).toUpperCase()}}</span><div><strong>{{fullName(p)}}</strong><small>{{p.ciudad||'Sin ciudad'}} · {{label(p.etiquetaId)}}</small><small>{{p.telefono}}</small></div></div>}@empty{<div class="empty">No hay personas registradas para este responsable.</div>}</div>}
+}
+</section>
+<p class="footer-note">Los datos se consultan directamente de Firebase. Esta primera versión permite explorar la red; las acciones de escritura se incorporarán con las mismas validaciones de la web.</p>
+}
+}
+</main>
+</div>
+@if(detail){<div class="overlay" (click)="detail=null"><section class="detail-modal" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-label="Ficha del líder"><div class="modal-heading"><h2>Ficha de líder</h2><button (click)="detail=null" aria-label="Cerrar"><ion-icon name="close-outline"></ion-icon></button></div><div class="profile-row"><span class="avatar large">{{detail.nombre.slice(0,1).toUpperCase()}}</span><div><strong>{{fullName(detail)}}</strong><small>Nivel {{detail.nivel}} · {{label(detail.etiquetaId)}}</small></div></div><div class="profile-info"><p><ion-icon name="location-outline"></ion-icon> {{detail.ciudad||'Sin ciudad'}}, {{detail.departamento||'Sin departamento'}}</p><p><ion-icon name="call-outline"></ion-icon> {{detail.telefono||'Sin teléfono'}}</p><p><ion-icon name="mail-outline"></ion-icon> {{detail.email||'Sin correo'}}</p></div><div class="profile-metrics"><div><span>Estimación manual</span><strong>{{format(detail.estimacionVotos||0)}}</strong></div><div><span>Estimado subárbol</span><strong>{{format(detail.votosEstimadosSubarbol||0)}}</strong></div><div><span>Registros subárbol</span><strong>{{format(detail.votosRealesSubarbol||0)}}</strong></div></div><button class="primary" (click)="openNode(detail.id);detail=null">Explorar su red</button></section></div>}
+@if(menuOpen){<div class="overlay menu-overlay" (click)="menuOpen=false"><aside class="side-menu" (click)="$event.stopPropagation()"><div class="modal-heading"><strong>AUTORIDAD POLÍTICA</strong><button (click)="menuOpen=false"><ion-icon name="close-outline"></ion-icon></button></div><span class="eyebrow">PRINCIPAL</span><button (click)="navigate('/dashboard')">Dashboard</button>@if(isOwner){<button (click)="navigate('/configuracion-campana')">Configuración de campañas</button>}<button class="current" (click)="menuOpen=false">Mi red</button><button (click)="navigate('/invitaciones')">Invitaciones a campañas</button><button (click)="navigate('/evolucion-historica')">Evolución histórica</button><span class="eyebrow">MEDIOS</span>@if(isOwner){<button (click)="navigate('/autorizaciones-gestion')">Autorizaciones y gestión</button>}<button (click)="navigate('/medios')">Medios</button><button (click)="navigate('/galeria')">Galería</button></aside></div>}
+</ion-content>

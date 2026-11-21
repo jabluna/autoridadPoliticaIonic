@@ -7,6 +7,7 @@
         <ion-icon name="menu-outline" class="menu-cue"></ion-icon>
       </button>
       <div class="header-actions">
+        <button type="button" class="header-icon theme-toggle" (click)="toggleTheme()" [attr.aria-label]="currentTheme() === 'dark' ? 'Activar modo claro' : 'Activar modo oscuro'" [attr.title]="currentTheme() === 'dark' ? 'Modo claro' : 'Modo oscuro'"><ion-icon [name]="currentTheme() === 'dark' ? 'sunny-outline' : 'moon-outline'"></ion-icon></button>
         @if (profile()?.rol === 'cliente_admin') {
           <button type="button" class="header-icon" (click)="notificationsOpen = true" aria-label="Ver notificaciones">
             <ion-icon name="notifications-outline"></ion-icon>
@@ -190,6 +191,7 @@
         @if (profile()?.rol === 'cliente_admin') { <button (click)="navigateMenu('/autorizaciones-gestion')"><ion-icon name="shield-checkmark-outline"></ion-icon> Autorizaciones y gestión</button> }
         <button (click)="navigateMenu('/medios')"><ion-icon name="folder-outline"></ion-icon> Medios</button>
         <button (click)="navigateMenu('/galeria')"><ion-icon name="images-outline"></ion-icon> Galería</button>
+        <div class="drawer-theme"><span>Apariencia</span><button type="button" (click)="toggleTheme()">{{ currentTheme() === 'dark' ? '☀ Modo claro' : '☾ Modo oscuro' }}</button></div>
         <div class="drawer-foot"><span>{{ account?.plan }}</span><button (click)="logout()">Cerrar sesión</button></div>
       </div>
     </div>

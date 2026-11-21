@@ -314,3 +314,7 @@
 :host-context(.app-light) .bottom-nav{background:rgba(255,255,255,.98);border-top-color:#a6c6ff}
 :host-context(.app-light) .bottom-nav button{color:#526c9b}
 :host-context(.app-light) .bottom-nav button.selected,:host-context(.app-light) .bottom-nav button.selected ion-icon{color:#014cff}
+
+/* Comparación: aporte azul eléctrico y estimado manual naranja, en ambos temas. */
+.bar-fill.amber-fill{background:#ff8a00}
+.chart-legend .legend-amber{background:#ff8a00}

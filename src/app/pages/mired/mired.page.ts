@@ -54,7 +54,7 @@ export class MiRedPage implements OnInit,OnDestroy {
   finally{this.loading=false;}
  }
  selectCampaign(id:string):void{
-  this.campaignId=id;this.clearBranch();this.subscriptions.forEach(u=>u());this.subscriptions=[];this.statsReady=false;this.stats={};this.meetingStats={};
+  this.campaignId=id;this.clearBranch();this.subscriptions.splice(1).forEach(u=>u());this.statsReady=false;this.stats={};this.meetingStats={};
   const p=this.profile();if(!p||!id)return;
   const base=collection(db,'clientes',p.clienteId,'campanas',id,'nodos');
   this.subscriptions.push(onSnapshot(query(base,limit(5001)),snap=>{

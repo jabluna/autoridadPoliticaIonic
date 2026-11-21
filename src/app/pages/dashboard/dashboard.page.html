@@ -170,7 +170,7 @@
     <nav class="bottom-nav" aria-label="Navegación principal">
       <button type="button" [class.selected]="activeTab === 'resumen'" (click)="switchTab('resumen')"><ion-icon name="grid-outline"></ion-icon><span>Dashboard</span></button>
       <button type="button" [class.selected]="activeTab === 'lideres'" (click)="switchTab('lideres')"><ion-icon name="people-outline"></ion-icon><span>Líderes</span></button>
-      <button type="button" (click)="navigateMenu('/mired')"><ion-icon name="git-network-outline"></ion-icon><span>Mi red</span></button>
+      <button type="button" (click)="navigateMenu('/mired')"><ion-icon name="people-outline"></ion-icon><span>Mi red</span></button>
       @if (profile()?.rol === 'cliente_admin') { <button type="button" [class.selected]="activeTab === 'avisos'" (click)="switchTab('avisos')"><ion-icon name="notifications-outline"></ion-icon><span>Avisos</span></button> }
     </nav>
 

@@ -68,3 +68,27 @@
 .root-summary span{flex:1}.root-summary button{background:#014cff;color:#fff;border:1px solid #3a83ce;border-radius:9px;padding:9px;font-size:10px}
 :host-context(.app-light) .root-summary{background:#e6f2ff;color:#24527d;border-color:#b4d5f5}
 :host-context(.app-light) .root-summary button{background:#d1e7ff;color:#13558d;border-color:#8ebbe8}
+
+
+.person-modal{width:min(94vw,720px);max-width:720px;max-height:90dvh;overflow:auto;padding:clamp(16px,3vw,26px)}
+.person-modal .modal-heading h2{font-size:21px;margin:6px 0}
+.person-form{margin-top:18px}.person-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.person-fields label,.person-observations{display:flex;flex-direction:column;gap:7px;color:#b9d0ea;font-size:12px;font-weight:700;min-width:0}
+.person-fields label.wide{grid-column:1/-1}
+.person-fields input,.person-fields select,.person-observations textarea{box-sizing:border-box;width:100%;min-height:44px;border:1px solid #47617e;background:#101f34;border-radius:11px;color:#f2f7ff;padding:10px;font:inherit;font-size:13px}
+.person-fields input:focus,.person-fields select:focus,.person-observations textarea:focus{outline:2px solid #014cff;outline-offset:1px}
+.meeting-fields{border:1px solid #3277a6;background:#102e4c;border-radius:12px;margin:17px 0;padding:15px}
+.meeting-fields legend{font-size:12px;font-weight:800;color:#9bc8ff;padding:0 6px}
+.person-observations textarea{resize:vertical;margin-top:3px}
+.person-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:20px}
+.person-actions button{border:1px solid #4d7092;border-radius:10px;padding:11px 16px;background:#193452;color:#fff;font-weight:700}
+.person-actions .primary{background:#014cff;border-color:#014cff}
+.person-actions button:disabled{opacity:.55}
+.person-error{color:#ff9e9e;font-size:12px;margin-top:10px}
+:host-context(.app-light) .person-fields label,:host-context(.app-light) .person-observations{color:#375370}
+:host-context(.app-light) .person-fields input,:host-context(.app-light) .person-fields select,:host-context(.app-light) .person-observations textarea{background:#fff;border-color:#c8d8eb;color:#173653}
+:host-context(.app-light) .meeting-fields{background:#eaf6ff;border-color:#a6d5f7}
+:host-context(.app-light) .meeting-fields legend{color:#135c98}
+:host-context(.app-light) .person-actions button{background:#f1f6ff;color:#235184;border-color:#b9d2ee}
+:host-context(.app-light) .person-actions .primary{background:#014cff;color:#fff;border-color:#014cff}
+@media(max-width:520px){.person-fields{grid-template-columns:1fr}.person-modal{max-height:93dvh}.person-actions{flex-wrap:wrap}.person-actions button{flex:1}}

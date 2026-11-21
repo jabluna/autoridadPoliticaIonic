@@ -20,6 +20,7 @@ export class MiRedPage implements OnInit,OnDestroy {
  stats:Record<string,{votos:number;directos:number;profundidad:number}>={};meetingStats:Record<string,{cantidad:number;personas:number}>={};statsReady=false;
  loading=true;branchLoading=false;peopleLoading=false;error='';menuOpen=false;detail:Leader|null=null;actionsFor:Leader|null=null;notesFor:Leader|null=null;notes:Array<{id:string;texto:string;fecha:Date|null}>=[];noteText='';editingNoteId='';notesBusy=false;peopleOwner:string|null=null;message='';
  personFormOpen=false;personBusy=false;personOwner:string|null=null;personForm={nombre:'',apellido:'',email:'',telefono:'',identificacion:'',departamento:'',ciudad:'',etiquetaId:'',observaciones:'',fechaReunion:'',lugarReunion:''};catalog:Record<string,Record<string,unknown>>={};catalogError='';meetingsData:Array<{id:string;responsableId:string|null;fecha:string;lugar:string;estado:string;cantidad:number}>=[];
+ get labelEntries():Array<{key:string;value:{nombre:string;color:string}}>{return Object.entries(this.labels).map(([key,value])=>({key,value}));}
  get departments():string[]{return Object.keys(this.catalog).sort((a,b)=>a.localeCompare(b,'es'));}
  get cities():string[]{return Object.keys(this.catalog[this.personForm.departamento]||{}).sort((a,b)=>a.localeCompare(b,'es'));}
  private subscriptions:Unsubscribe[]=[];private branchSubs:Unsubscribe[]=[];

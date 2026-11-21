@@ -4,7 +4,7 @@ import { Router } from '@angular/router';
 import { IonContent, IonIcon, IonSpinner } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import { arrowBackOutline, chevronBackOutline, chevronForwardOutline, peopleOutline, personAddOutline, searchOutline, layersOutline, gridOutline, listOutline, closeOutline, refreshOutline, locationOutline, callOutline, mailOutline, menuOutline, personOutline } from 'ionicons/icons';
-import { collection, doc, getDoc, getDocs, limit, onSnapshot, query, where, setDoc, updateDoc, deleteDoc, serverTimestamp, writeBatch, increment, type Unsubscribe } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, limit, onSnapshot, query, where, setDoc, updateDoc, deleteDoc, serverTimestamp, writeBatch, increment, type Unsubscribe, type DocumentData, type DocumentSnapshot } from 'firebase/firestore';
 import { AuthService } from '../../core/auth.service';
 import { db, rtdb } from '../../core/firebase';
 import { get, ref } from 'firebase/database';
@@ -175,8 +175,8 @@ export class MiRedPage implements OnInit,OnDestroy {
      if(seen.has(cursor)||seen.size>30)throw Error('Jerarquía inconsistente.');
      seen.add(cursor);
      if(cursor===rootId){authorized=true;break;}
-     const ancestorSnap=await getDoc(doc(nodes,String(cursor)));
-     const ancestorData=ancestorSnap.data();
+     const ancestorSnap:DocumentSnapshot<DocumentData> = await getDoc(doc(nodes,String(cursor)));
+     const ancestorData:DocumentData|undefined=ancestorSnap.data();
      if(!ancestorSnap.exists()||!ancestorData||ancestorData['estado']==='inactivo')break;
      cursor=String(ancestorData['padreId']||'')||null;
     }
@@ -190,9 +190,10 @@ export class MiRedPage implements OnInit,OnDestroy {
    while(cursor){
     if(seen.has(cursor)||ancestors.length>30)throw Error('Jerarquía inconsistente.');
     seen.add(cursor);ancestors.push(cursor);
-    const snap=await getDoc(doc(nodes,cursor));
-    if(!snap.exists()||snap.data()['estado']==='inactivo')throw Error('No se encontró un antecesor activo.');
-    cursor=String(snap.data()['padreId']||'')||null;
+    const snap:DocumentSnapshot<DocumentData>=await getDoc(doc(nodes,String(cursor)));
+    const data:DocumentData|undefined=snap.data();
+    if(!snap.exists()||!data||data['estado']==='inactivo')throw Error('No se encontró un antecesor activo.');
+    cursor=String(data['padreId']||'')||null;
    }
    secondary=initializeApp(firebaseConfig,'crear-lider-'+Date.now()+'-'+Math.random().toString(36).slice(2));
    const secondaryAuth=getAuth(secondary);

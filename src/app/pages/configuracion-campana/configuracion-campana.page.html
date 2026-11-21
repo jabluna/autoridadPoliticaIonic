@@ -1,0 +1,72 @@
+<ion-content [fullscreen]="true" class="config-screen">
+<div class="config-shell">
+<header class="config-top">
+  <button class="icon-btn" (click)="back()" aria-label="Volver al dashboard"><ion-icon name="arrow-back-outline"></ion-icon></button>
+  <div><strong>AUTORIDAD POLÍTICA</strong><small>CONFIGURACIÓN DE CAMPAÑAS</small></div>
+  <button class="icon-btn" (click)="menuOpen=true" aria-label="Abrir menú"><ion-icon name="menu-outline"></ion-icon></button>
+</header>
+<main class="config-main">
+  <div class="hero"><div><span class="eyebrow">CENTRO DE ADMINISTRACIÓN</span><h1>Configuración de <em>campañas</em></h1><p>Organiza tus campañas y grupos de trabajo con los mismos datos de la plataforma web.</p></div>
+  @if(isOwner){<button class="primary-btn" (click)="newCampaign()"><ion-icon name="add-outline"></ion-icon> Nueva campaña</button>}</div>
+  @if(error){<p class="alert error" role="alert">{{error}}</p>}
+  @if(success){<p class="alert success">{{success}}</p>}
+  @if(loading){<div class="loading"><ion-spinner></ion-spinner> Cargando campañas...</div>}
+  @else {
+    <section class="stats"><div><span>Campañas registradas</span><strong>{{campaigns.length}}</strong></div><div><span>Campañas activas</span><strong>{{activeCampaignCount}}</strong></div><div><span>Niveles permitidos</span><strong>{{client['nivelesRed']||1}}</strong></div></section>
+    <div class="list-heading"><h2>Mis campañas</h2><span>{{campaigns.length}} registros</span></div>
+    <div class="campaign-list">
+    @for(c of campaigns;track c.id){
+      <article class="campaign-card"><div class="card-head"><div class="card-symbol"><ion-icon name="layers-outline"></ion-icon></div><div class="card-title"><h3>{{c.nombreCampana}}</h3><span>{{c.corporacion}} · {{c.tipo}}</span></div><span class="state" [class.active]="c.estado==='activa'">{{c.estado}}</span></div>
+      <div class="card-details"><div><span>Candidato</span><strong>{{c.candidato||'Sin registrar'}}</strong></div><div><span>Territorio</span><strong>{{c.municipio||c.departamento||'Nacional'}}</strong></div><div><span>Meta de votos</span><strong>{{c.metaVotos||0}}</strong></div><div><span>Fecha elección</span><strong>{{c.fechaEleccion||'Sin definir'}}</strong></div></div>
+      @if(c.lema){<p class="campaign-slogan">“{{c.lema}}”</p>}
+      @if(isOwner){<div class="card-actions"><button (click)="edit(c)"><ion-icon name="create-outline"></ion-icon> Editar</button>@if(c.corporacion==='silueta'){<button (click)="edit(c,true)"><ion-icon name="swap-horizontal-outline"></ion-icon> Transformar</button>}<button (click)="toggleActive(c)"><ion-icon name="checkmark-circle-outline"></ion-icon> {{c.estado==='activa'?'Desactivar':'Activar'}}</button><button class="danger" (click)="confirmDelete=c"><ion-icon name="trash-outline"></ion-icon> Eliminar</button></div>}
+      </article>
+    } @empty {<div class="empty">Aún no hay campañas configuradas.</div>}
+    </div>
+  }
+</main>
+</div>
+
+@if(formOpen){
+<div class="overlay" (click)="close()"><section class="form-modal" role="dialog" aria-modal="true" aria-label="Formulario de campaña" (click)="$event.stopPropagation()">
+<div class="modal-head"><div><span class="eyebrow">CONFIGURACIÓN</span><h2>{{form.id?'Editar campaña':'Nueva campaña'}}</h2></div><button class="icon-btn" (click)="close()" aria-label="Cerrar"><ion-icon name="close-outline"></ion-icon></button></div>
+<div class="stepper">@for(n of [1,2,3,4,5];track n){@if(n<=totalSteps){<span [class.current]="n===step" [class.done]="n<step">{{n}}</span>}}</div>
+<div class="modal-body"><h3>{{stepName(step)}}</h3>
+@if(error){<p class="alert error">{{error}}</p>}
+@if(step===1){
+  <label>Alcance de la campaña<select [(ngModel)]="form.tipo" (ngModelChange)="changeType($event)"><option value="municipal">Municipal</option><option value="departamental">Departamental</option><option value="nacional">Nacional</option></select></label>
+  <label>Corporación / tipo de campaña<select [(ngModel)]="form.corporacion">@for(opt of options[form.tipo];track opt.value){<option [value]="opt.value">{{opt.label}}</option>}</select></label>
+  <p class="hint">Las campañas tipo silueta se pueden transformar conservando su identificador y red.</p>
+}
+@if(step===2){
+  <label>Nombre del grupo de trabajo / campaña<input [(ngModel)]="form.nombreCampana" placeholder="Nombre de campaña"></label>
+  <label>Candidato o cabeza de lista<input [(ngModel)]="form.candidato" placeholder="Nombre del candidato"></label>
+  <label>Partido o movimiento<input [(ngModel)]="form.partidoMovimiento" placeholder="Partido o movimiento"></label>
+  <label>Lema de campaña<input [(ngModel)]="form.lema" placeholder="Lema"></label>
+  <label>Meta de votos<input type="number" min="0" [(ngModel)]="form.metaVotos"></label>
+  <label>Fecha de elección<input type="date" [(ngModel)]="form.fechaEleccion"></label>
+}
+@if(step===3){
+  @if(form.tipo==='nacional'){<div class="info-box"><strong>Multired nacional</strong><p>Se aplicarán {{client['nivelesRed']||1}} niveles autorizados por el plan.</p></div>}
+  @else{
+    <label>Departamento<select [(ngModel)]="form.departamento" (ngModelChange)="changeDepartment()"><option value="">Seleccionar departamento</option>@for(dept of departments;track dept){<option [value]="dept">{{dept}}</option>}</select></label>
+    @if(form.tipo==='municipal'){<label>Municipio<select [(ngModel)]="form.municipio" (ngModelChange)="changeMunicipality()"><option value="">Seleccionar municipio</option>@for(city of municipalities;track city){<option [value]="city">{{city}}</option>}</select></label>}
+    @if(!departments.length){<p class="hint">El catálogo de departamentos no está disponible. Verifica las reglas de Realtime Database.</p>}
+  }
+}
+@if(step===4&&form.tipo==='municipal'){
+  <label>Cobertura de puestos<select [(ngModel)]="form.alcancePuestos" (ngModelChange)="form.puestosSeleccionados=[]"><option value="todos">Todos los puestos</option><option value="seleccionados">Seleccionar puestos</option></select></label>
+  <p class="hint">{{votingPlaces.length}} puestos disponibles · {{totalMesas}} mesas</p>
+  @if(form.alcancePuestos==='seleccionados'){<div class="places">@for(p of votingPlaces;track p.name){<label class="place"><input type="checkbox" [checked]="form.puestosSeleccionados.includes(p.name)" (change)="togglePlace(p.name)"><span>{{p.name}}</span><small>{{p.mesas}} mesas</small></label>}</div>}
+}
+@if(isReview){
+  <div class="review"><div><span>Campaña</span><strong>{{form.nombreCampana}}</strong></div><div><span>Candidato</span><strong>{{form.candidato}}</strong></div><div><span>Tipo</span><strong>{{form.tipo}} · {{form.corporacion}}</strong></div><div><span>Territorio</span><strong>{{form.municipio||form.departamento||'Nacional'}}</strong></div><div><span>Meta</span><strong>{{form.metaVotos}}</strong></div><div><span>Fecha</span><strong>{{form.fechaEleccion||'No definida'}}</strong></div></div>
+}
+</div>
+<div class="modal-actions"><button class="secondary-btn" (click)="step===1?close():previous()">{{step===1?'Cancelar':'Anterior'}}</button>@if(isReview){<button class="primary-btn" [disabled]="saving" (click)="save()">{{saving?'Guardando...':'Guardar campaña'}}</button>}@else{<button class="primary-btn" (click)="next()">Continuar</button>}</div>
+</section></div>
+}
+@if(confirmDelete){<div class="overlay"><section class="confirm-modal" role="alertdialog" aria-modal="true"><h2>Eliminar campaña</h2><p>¿Eliminar “{{confirmDelete.nombreCampana}}”? Esta acción no elimina automáticamente las subcolecciones de la red en Firestore.</p><div class="modal-actions"><button class="secondary-btn" (click)="confirmDelete=null">Cancelar</button><button class="delete-btn" [disabled]="saving" (click)="deleteCampaign()">Eliminar</button></div></section></div>}
+@if(requestUpgrade){<div class="overlay"><section class="confirm-modal" role="dialog" aria-modal="true"><h2>Ampliación de plan</h2><p>La corporación {{requestUpgrade}} no está habilitada en tu plan. Puedes solicitar autorización al administrador.</p><div class="modal-actions"><button class="secondary-btn" (click)="requestUpgrade=null">Cancelar</button><button class="primary-btn" [disabled]="saving" (click)="sendUpgrade()">Solicitar</button></div></section></div>}
+@if(menuOpen){<div class="overlay" (click)="menuOpen=false"><section class="side-menu" (click)="$event.stopPropagation()"><div class="modal-head"><strong>AUTORIDAD POLÍTICA</strong><button class="icon-btn" (click)="menuOpen=false"><ion-icon name="close-outline"></ion-icon></button></div><button (click)="back()">Dashboard</button><button (click)="menuOpen=false">Configuración de campañas</button><p>Las demás secciones se habilitarán en sus respectivas pantallas.</p></section></div>}
+</ion-content>

@@ -126,19 +126,19 @@ export class MiRedPage implements OnInit,OnDestroy {
   if(!f.fechaReunion||!f.lugarReunion.trim()){this.error='Indica fecha y lugar de la reunión.';return;}
   this.personBusy=true;this.error='';
   try{
-   const base=['clientes',p.clienteId,'campanas',this.campaignId];
-   const meetings=collection(db,...base,'reuniones');
+   const base=collection(db,'clientes',p.clienteId,'campanas',this.campaignId,'reuniones').parent!;
+   const meetings=collection(base,'reuniones');
    const active=this.meetingsData.find(x=>x.responsableId===owner&&x.estado==='activa');
    if(active&&(active.fecha!==f.fechaReunion||active.lugar!==f.lugarReunion.trim()))throw Error('Hay una reunión activa. Finalízala en la web antes de iniciar otra con fecha o lugar diferentes.');
    const ancestors:string[]=[];const visited=new Set<string>();let cursor=owner;
-   while(cursor){if(visited.has(cursor)||ancestors.length>30)throw Error('Jerarquía inconsistente.');visited.add(cursor);ancestors.push(cursor);const node=await getDoc(doc(db,...base,'nodos',cursor));if(!node.exists()||node.data()['estado']==='inactivo')throw Error('El responsable no está disponible.');cursor=node.data()['padreId']||null;}
+   while(cursor){if(visited.has(cursor)||ancestors.length>30)throw Error('Jerarquía inconsistente.');visited.add(cursor);ancestors.push(cursor);const node=await getDoc(doc(base,'nodos',cursor));if(!node.exists()||node.data()['estado']==='inactivo')throw Error('El responsable no está disponible.');cursor=node.data()['padreId']||null;}
    const batch=writeBatch(db),meetingDoc=active?doc(meetings,active.id):doc(meetings);
    if(active)batch.update(meetingDoc,{cantidad:increment(1)});
    else batch.set(meetingDoc,{responsableId:owner,fecha:f.fechaReunion,lugar:f.lugarReunion.trim(),estado:'activa',cantidad:1,creadoEn:serverTimestamp()});
-   const people=owner?collection(db,...base,'nodos',owner,'personas'):collection(db,...base,'personasRaiz');
+   const people=owner?collection(base,'nodos',owner,'personas'):collection(base,'personasRaiz');
    batch.set(doc(people),{nombre:f.nombre.trim(),apellido:f.apellido.trim(),email:f.email.trim().toLowerCase(),telefono:f.telefono.trim(),identificacion:f.identificacion.trim(),departamento:f.departamento.trim(),ciudad:f.ciudad.trim(),etiquetaId:f.etiquetaId,observaciones:f.observaciones.trim(),multinodo:false,responsableId:owner,reunionId:meetingDoc.id,fechaReunion:f.fechaReunion,lugarReunion:f.lugarReunion.trim(),creadoEn:serverTimestamp(),actualizadoEn:serverTimestamp()});
-   for(const id of ancestors)batch.update(doc(db,...base,'nodos',id),{votosRealesSubarbol:increment(1)});
-   batch.set(doc(db,...base,'metricas','red'),{registros:increment(1)},{merge:true});
+   for(const id of ancestors)batch.update(doc(base,'nodos',id),{votosRealesSubarbol:increment(1)});
+   batch.set(doc(base,'metricas','red'),{registros:increment(1)},{merge:true});
    await batch.commit();this.personFormOpen=false;this.message='Persona registrada correctamente. No consume cupo de liderazgo.';
    if(this.view==='comunidad'&&this.peopleOwner===owner)this.showPeople();
   }catch(e){this.error=e instanceof Error?e.message:'No fue posible registrar la persona.';}finally{this.personBusy=false;}

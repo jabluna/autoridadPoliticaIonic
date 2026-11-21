@@ -212,3 +212,74 @@
 :host-context(.app-light) .drawer-theme button{background:#fff;color:#1b704b;border:1px solid #b8d9c4}
 .drawer-theme{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:10px 0;padding:12px;border-radius:12px;background:#153d2b;color:#bde9cd;font-size:12px}
 .drawer-theme button{background:#275c3e;border:1px solid #4e9368;color:#e5ffed;border-radius:9px;padding:9px 12px;font-size:11px}
+
+
+/* Light dashboard: all large panels and nested controls must be readable. */
+:host-context(.app-light) .main-overview{background:linear-gradient(135deg,#e4f7ed,#d3efdf);border-color:#9ed2b5;box-shadow:0 10px 28px #215b3610}
+:host-context(.app-light) .main-overview .overview-label{color:#146c43}
+:host-context(.app-light) .main-overview .overview-header h2{color:#16472e}
+:host-context(.app-light) .main-overview>p{color:#4a7059}
+:host-context(.app-light) .overview-meta span{background:#f4fff7;border-color:#b6dbc5;color:#275b3d}
+:host-context(.app-light) .overview-meta ion-icon{color:#198554}
+:host-context(.app-light) .slogan{background:#f5fff8;border-color:#a7d8b9}
+:host-context(.app-light) .slogan span{color:#20754b}
+:host-context(.app-light) .slogan strong{color:#245039}
+:host-context(.app-light) .panel-block{background:#fff;border-color:#d0e5d9;box-shadow:0 9px 25px #184b3210}
+:host-context(.app-light) .panel-block .eyebrow{color:#427e5e}
+:host-context(.app-light) .panel-block .section-title :is(h2,h3){color:#1a4430}
+:host-context(.app-light) .panel-block .section-subtitle{color:#607d6c}
+:host-context(.app-light) .section-title>ion-icon{color:#148456}
+:host-context(.app-light) .stat-card{background:#f9fdfa;border-color:#d2e5d9}
+:host-context(.app-light) .stat-card strong{color:#16472f}
+:host-context(.app-light) .stat-card>span:last-child{color:#5e7b69}
+:host-context(.app-light) .completion-panel{background:#eff9f3;border-color:#c2dfce}
+:host-context(.app-light) .completion-panel .row-between{color:#345e45}
+:host-context(.app-light) .completion-panel .row-between strong{color:#127a47}
+:host-context(.app-light) .completion-panel p{color:#5a7764}
+:host-context(.app-light) .completion-panel p strong{color:#164e31}
+:host-context(.app-light) .progress-track,:host-context(.app-light) .bar-track{background:#d6e8dc}
+:host-context(.app-light) .section-percent{color:#16814d}
+:host-context(.app-light) .section-number{background:#e8f6ec;border-color:#bddcc8;color:#1b7247}
+:host-context(.app-light) .chart-legend{color:#4c6e5b}
+:host-context(.app-light) .search-field{background:#f8fcfa;border-color:#bddbc9;color:#337653}
+:host-context(.app-light) .search-field input{color:#1c4330}
+:host-context(.app-light) .search-field input::placeholder{color:#688774}
+:host-context(.app-light) .page-size{color:#456b53}
+:host-context(.app-light) .page-size select{background:#fff;border-color:#bfdac9;color:#244d35}
+:host-context(.app-light) .projection-row{background:#f8fcfa;border-color:#d2e5d8}
+:host-context(.app-light) .leader-line strong,:host-context(.app-light) .bar-line strong{color:#204e35}
+:host-context(.app-light) .leader-line span{color:#688575}
+:host-context(.app-light) .pagination{color:#597b64;border-color:#d2e5d8}
+:host-context(.app-light) .pagination button{background:#f0f8f3;border-color:#c0ddc9;color:#1b7048}
+:host-context(.app-light) .campaign-item{background:#f8fcfa;border-color:#d2e5d8}
+:host-context(.app-light) .campaign-info span{color:#587864}
+:host-context(.app-light) .campaign-state{background:#edf1ee;color:#56685c}
+:host-context(.app-light) .campaign-state--active{background:#d6f5e0;color:#166b40}
+:host-context(.app-light) .account-rows>div{border-color:#d2e5d8}
+:host-context(.app-light) .account-rows span{color:#5d7c68}
+:host-context(.app-light) .account-rows strong{color:#234d34}
+:host-context(.app-light) .leaders-picks button{background:#f8fcfa;border-color:#c6dfd0;color:#244d36}
+:host-context(.app-light) .leaders-picks button.selected{background:#d5f2e1;border-color:#51ad77}
+:host-context(.app-light) .leaders-picks button span{color:#5e7e6a}
+:host-context(.app-light) .leader-profile{background:linear-gradient(140deg,#e8f8ef,#f9fffb);border-color:#b8ddc8}
+:host-context(.app-light) .leader-header p,:host-context(.app-light) .leader-detail-bars span{color:#537563}
+:host-context(.app-light) .leader-header span{color:#18794d}
+:host-context(.app-light) .leader-metrics>div{background:#fff;border-color:#c8e3d3}
+:host-context(.app-light) .leader-metrics span{color:#5e7967}
+:host-context(.app-light) .notice-item{background:#f8fcfa;border-color:#cfe3d7;color:#214d34}
+:host-context(.app-light) .notice-type{background:#d9f4e2;color:#146e43}
+:host-context(.app-light) .notice-item p{color:#547361}
+:host-context(.app-light) .notice-item small{color:#658573}
+:host-context(.app-light) .empty-state{border-color:#bcdac8;color:#557764}
+:host-context(.app-light) .bottom-nav{background:rgba(255,255,255,.98);border-color:#c7e0d0}
+:host-context(.app-light) .bottom-nav button{color:#597b66}
+:host-context(.app-light) .bottom-nav button.selected{color:#12764a}
+:host-context(.app-light) .drawer-panel{background:#fff;border-color:#c9e1d3}
+:host-context(.app-light) .drawer-panel>p{color:#5c7c68}
+:host-context(.app-light) .drawer-panel>button{color:#254e36}
+:host-context(.app-light) .drawer-panel>button ion-icon{color:#187c4c}
+:host-context(.app-light) .drawer-header button,:host-context(.app-light) .modal-header button{background:#e8f5ed;color:#1e6d46}
+:host-context(.app-light) .drawer-foot{color:#5d7e68;border-color:#cce2d5}
+:host-context(.app-light) .drawer-foot button{background:#e3f5e9;color:#1b6e46;border-color:#b7dac4}
+:host-context(.app-light) .notifications-modal{background:#fff;border-color:#c8e0d1}
+:host-context(.app-light) .modal-header{border-color:#d3e7da}

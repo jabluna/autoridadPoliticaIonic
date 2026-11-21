@@ -138,5 +138,5 @@ export class ConfiguracionCampanaPage implements OnInit {
     }catch{this.error='No fue posible enviar la solicitud.';}
     finally{this.saving=false;}
   }
-  back():void{void this.router.navigateByUrl('/dashboard');}
+  navigate(path:string):void{this.menuOpen=false;void this.router.navigateByUrl(path);}\n  back():void{void this.router.navigateByUrl('/dashboard');}
 }

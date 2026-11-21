@@ -131,7 +131,8 @@ export class DashboardPage implements OnInit {
   notificationDate(date: Date | null): string {
     return date ? date.toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' }) : 'Fecha no disponible';
   }
-  navigateMenu(path: string): void { this.menuOpen = false; void this.router.navigateByUrl(path); }\n  switchTab(tab: 'resumen' | 'lideres' | 'avisos'): void {
+  navigateMenu(path: string): void { this.menuOpen = false; void this.router.navigateByUrl(path); }
+  switchTab(tab: 'resumen' | 'lideres' | 'avisos'): void {
     this.activeTab = tab;
     this.menuOpen = false;
   }

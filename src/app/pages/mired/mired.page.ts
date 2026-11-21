@@ -4,9 +4,10 @@ import { Router } from '@angular/router';
 import { IonContent, IonIcon, IonSpinner } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import { arrowBackOutline, chevronBackOutline, chevronForwardOutline, peopleOutline, personAddOutline, searchOutline, layersOutline, gridOutline, listOutline, closeOutline, refreshOutline, locationOutline, callOutline, mailOutline, menuOutline, personOutline } from 'ionicons/icons';
-import { collection, doc, getDoc, getDocs, limit, onSnapshot, query, where, setDoc, updateDoc, deleteDoc, serverTimestamp, type Unsubscribe } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, limit, onSnapshot, query, where, setDoc, updateDoc, deleteDoc, serverTimestamp, writeBatch, increment, type Unsubscribe } from 'firebase/firestore';
 import { AuthService } from '../../core/auth.service';
-import { db } from '../../core/firebase';
+import { db, rtdb } from '../../core/firebase';
+import { get, ref } from 'firebase/database';
 
 interface Campaign {id:string;nombreCampana:string;estado:string;}
 interface Leader {puntuacion?:number;id:string;nombre:string;apellido:string;email:string;telefono:string;ciudad:string;departamento:string;padreId:string|null;nivel:number;estado:string;fotoUrl?:string;estimacionVotos:number;votosEstimadosSubarbol:number;votosRealesSubarbol:number;etiquetaId:string;multinodo?:boolean;}
@@ -18,6 +19,9 @@ export class MiRedPage implements OnInit,OnDestroy {
  labels:Record<string,{nombre:string;color:string}>={};view:'grafica'|'tabla'|'comunidad'='grafica';search='';page=1;pageSize=10;
  stats:Record<string,{votos:number;directos:number;profundidad:number}>={};meetingStats:Record<string,{cantidad:number;personas:number}>={};statsReady=false;
  loading=true;branchLoading=false;peopleLoading=false;error='';menuOpen=false;detail:Leader|null=null;actionsFor:Leader|null=null;notesFor:Leader|null=null;notes:Array<{id:string;texto:string;fecha:Date|null}>=[];noteText='';editingNoteId='';notesBusy=false;peopleOwner:string|null=null;message='';
+ personFormOpen=false;personBusy=false;personOwner:string|null=null;personForm={nombre:'',apellido:'',email:'',telefono:'',identificacion:'',departamento:'',ciudad:'',etiquetaId:'',observaciones:'',fechaReunion:'',lugarReunion:''};catalog:Record<string,Record<string,unknown>>={};catalogError='';meetingsData:Array<{id:string;responsableId:string|null;fecha:string;lugar:string;estado:string;cantidad:number}>=[];
+ get departments():string[]{return Object.keys(this.catalog).sort((a,b)=>a.localeCompare(b,'es'));}
+ get cities():string[]{return Object.keys(this.catalog[this.personForm.departamento]||{}).sort((a,b)=>a.localeCompare(b,'es'));}
  private subscriptions:Unsubscribe[]=[];private branchSubs:Unsubscribe[]=[];
  constructor(private readonly access:AuthService,private readonly router:Router){addIcons({arrowBackOutline,chevronBackOutline,chevronForwardOutline,peopleOutline,personAddOutline,searchOutline,layersOutline,gridOutline,listOutline,closeOutline,refreshOutline,locationOutline,callOutline,mailOutline,menuOutline,personOutline});}
  get isOwner():boolean{return this.profile()?.rol==='cliente_admin';}
@@ -41,7 +45,7 @@ export class MiRedPage implements OnInit,OnDestroy {
  meetings(id:string|null){return this.meetingStats[id||'root']||{cantidad:0,personas:0};}
  format(n:number):string{return new Intl.NumberFormat('es-CO').format(n||0);}
  label(id:string):string{return this.labels[id]?.nombre||'Sin etiqueta';}
- ngOnInit():void{void this.load();}
+ ngOnInit():void{void this.load();void this.loadCatalog();}
  ngOnDestroy():void{this.clearBranch();this.subscriptions.forEach(u=>u());}
  private clearBranch():void{this.branchSubs.forEach(u=>u());this.branchSubs=[];}
  async load():Promise<void>{
@@ -77,6 +81,7 @@ export class MiRedPage implements OnInit,OnDestroy {
    catch(e){this.statsReady=false;this.error=e instanceof Error?e.message:'Error calculando la red.';}
   },()=>{this.error='No se pudo calcular la estructura de la red.';}));
   this.subscriptions.push(onSnapshot(query(collection(db,'clientes',p.clienteId,'campanas',id,'reuniones'),limit(5001)),snap=>{
+   this.meetingsData=snap.docs.map(d=>({id:d.id,responsableId:d.data()['responsableId']||null,fecha:String(d.data()['fecha']||''),lugar:String(d.data()['lugar']||''),estado:String(d.data()['estado']||''),cantidad:Number(d.data()['cantidad']||0)}));
    const result:typeof this.meetingStats={};for(const row of snap.docs){const data=row.data();const key=String(data['responsableId']||'root');const old=result[key]||{cantidad:0,personas:0};result[key]={cantidad:old.cantidad+1,personas:old.personas+Number(data['cantidad']||0)};}this.meetingStats=result;
   },()=>{this.error='No se pudieron cargar las reuniones.';}));
   this.openNode(this.rootId);
@@ -104,6 +109,39 @@ export class MiRedPage implements OnInit,OnDestroy {
  async saveNote():Promise<void>{const p=this.profile(),n=this.notesFor;if(!p||!n||!this.noteText.trim()||this.notesBusy)return;this.notesBusy=true;try{const col=collection(db,'clientes',p.clienteId,'campanas',this.campaignId,'nodos',n.id,'notas');if(this.editingNoteId)await updateDoc(doc(col,this.editingNoteId),{texto:this.noteText.trim(),fechaEdicion:serverTimestamp()});else await setDoc(doc(col),{texto:this.noteText.trim(),fecha:serverTimestamp(),autorUid:p.uid||''});await this.openNotes(n);this.message='Comentario guardado.';}catch{this.error='No se pudo guardar el comentario.';}finally{this.notesBusy=false;}}
  async deleteNote(id:string):Promise<void>{const p=this.profile(),n=this.notesFor;if(!p||!n||this.notesBusy||!confirm('¿Eliminar este comentario?'))return;this.notesBusy=true;try{await deleteDoc(doc(db,'clientes',p.clienteId,'campanas',this.campaignId,'nodos',n.id,'notas',id));this.notes=this.notes.filter(x=>x.id!==id);this.message='Comentario eliminado.';}catch{this.error='No se pudo eliminar el comentario.';}finally{this.notesBusy=false;}}
  share(n:Leader):void{this.actionsFor=null;const votos=n.id==='gerencia'?this.leaders.reduce((sum,leader)=>sum+this.stat(leader).votos,0):this.stat(n).votos,estimado=Number(n.estimacionVotos||0);const msg='Resumen de la red de '+this.fullName(n)+'\\nVotos de la red: '+this.format(votos)+'\\nEstimado: '+this.format(estimado)+'\\nDiferencia: '+this.format(estimado-votos)+'\\nFecha: '+new Date().toLocaleString('es-CO');window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank','noopener,noreferrer');}
+ async loadCatalog():Promise<void>{try{const s=await get(ref(rtdb,'MUNICIPIOPUESTOS'));this.catalog=s.exists()?s.val():{};}catch{this.catalogError='No se pudieron cargar los departamentos y municipios.';}}
+ openPersonForm(n:Leader):void{
+  if(!this.isOwner){this.message='Los registros de comunidad requieren autorización del administrador.';return;}
+  this.actionsFor=null;this.personOwner=n.id==='gerencia'?null:n.id;const active=this.meetingsData.find(x=>x.responsableId===this.personOwner&&x.estado==='activa');
+  const date=new Date();const localDate=[date.getFullYear(),String(date.getMonth()+1).padStart(2,'0'),String(date.getDate()).padStart(2,'0')].join('-');
+  this.personForm={nombre:'',apellido:'',email:'',telefono:'',identificacion:'',departamento:'',ciudad:'',etiquetaId:Object.keys(this.labels)[0]||'',observaciones:'',fechaReunion:active?.fecha||localDate,lugarReunion:active?.lugar||''};
+  this.personFormOpen=true;this.error='';this.message='';
+ }
+ async savePerson():Promise<void>{
+  const p=this.profile(),f=this.personForm,owner=this.personOwner;
+  if(!p||!this.campaignId||this.personBusy)return;
+  if(!this.isOwner){this.error='No tienes permisos para registrar personas.';return;}
+  if(!f.nombre.trim()||!f.apellido.trim()||!f.etiquetaId||!this.labels[f.etiquetaId]){this.error='Nombre, apellido y etiqueta válida son obligatorios.';return;}
+  if(!f.fechaReunion||!f.lugarReunion.trim()){this.error='Indica fecha y lugar de la reunión.';return;}
+  this.personBusy=true;this.error='';
+  try{
+   const base=['clientes',p.clienteId,'campanas',this.campaignId];
+   const meetings=collection(db,...base,'reuniones');
+   const active=this.meetingsData.find(x=>x.responsableId===owner&&x.estado==='activa');
+   if(active&&(active.fecha!==f.fechaReunion||active.lugar!==f.lugarReunion.trim()))throw Error('Hay una reunión activa. Finalízala en la web antes de iniciar otra con fecha o lugar diferentes.');
+   const ancestors:string[]=[];const visited=new Set<string>();let cursor=owner;
+   while(cursor){if(visited.has(cursor)||ancestors.length>30)throw Error('Jerarquía inconsistente.');visited.add(cursor);ancestors.push(cursor);const node=await getDoc(doc(db,...base,'nodos',cursor));if(!node.exists()||node.data()['estado']==='inactivo')throw Error('El responsable no está disponible.');cursor=node.data()['padreId']||null;}
+   const batch=writeBatch(db),meetingDoc=active?doc(meetings,active.id):doc(meetings);
+   if(active)batch.update(meetingDoc,{cantidad:increment(1)});
+   else batch.set(meetingDoc,{responsableId:owner,fecha:f.fechaReunion,lugar:f.lugarReunion.trim(),estado:'activa',cantidad:1,creadoEn:serverTimestamp()});
+   const people=owner?collection(db,...base,'nodos',owner,'personas'):collection(db,...base,'personasRaiz');
+   batch.set(doc(people),{nombre:f.nombre.trim(),apellido:f.apellido.trim(),email:f.email.trim().toLowerCase(),telefono:f.telefono.trim(),identificacion:f.identificacion.trim(),departamento:f.departamento.trim(),ciudad:f.ciudad.trim(),etiquetaId:f.etiquetaId,observaciones:f.observaciones.trim(),multinodo:false,responsableId:owner,reunionId:meetingDoc.id,fechaReunion:f.fechaReunion,lugarReunion:f.lugarReunion.trim(),creadoEn:serverTimestamp(),actualizadoEn:serverTimestamp()});
+   for(const id of ancestors)batch.update(doc(db,...base,'nodos',id),{votosRealesSubarbol:increment(1)});
+   batch.set(doc(db,...base,'metricas','red'),{registros:increment(1)},{merge:true});
+   await batch.commit();this.personFormOpen=false;this.message='Persona registrada correctamente. No consume cupo de liderazgo.';
+   if(this.view==='comunidad'&&this.peopleOwner===owner)this.showPeople();
+  }catch(e){this.error=e instanceof Error?e.message:'No fue posible registrar la persona.';}finally{this.personBusy=false;}
+ }
  unavailable(action:string):void{this.message=action+' requiere portar las validaciones de la web antes de permitir cambios en Firebase.';}
  changeView(v:'grafica'|'tabla'|'comunidad'):void{if(v==='comunidad')this.showPeople();else{this.view=v;this.search='';}}
  next():void{this.page=Math.min(this.totalPages,this.page+1);}

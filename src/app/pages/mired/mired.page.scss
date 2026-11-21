@@ -92,3 +92,5 @@
 :host-context(.app-light) .person-actions button{background:#f1f6ff;color:#235184;border-color:#b9d2ee}
 :host-context(.app-light) .person-actions .primary{background:#014cff;color:#fff;border-color:#014cff}
 @media(max-width:520px){.person-fields{grid-template-columns:1fr}.person-modal{max-height:93dvh}.person-actions{flex-wrap:wrap}.person-actions button{flex:1}}
+
+.person-row-actions{display:flex;align-items:center;gap:8px;margin-left:auto}.person-row-actions button{background:#014cff;color:#fff;border:1px solid #427fff;border-radius:10px;padding:10px 12px;font-size:11px;font-weight:700;white-space:nowrap}.person-form input[type=checkbox]{width:18px;height:18px;min-height:0;vertical-align:middle;accent-color:#014cff;margin-right:8px}.person-form .person-fields label.wide span{display:flex;align-items:center}.person-form .person-fields label.wide span input{flex:0 0 18px}@media(max-width:520px){.directory-item:has(.person-row-actions){flex-wrap:wrap}.person-row-actions{width:100%;justify-content:flex-end}}

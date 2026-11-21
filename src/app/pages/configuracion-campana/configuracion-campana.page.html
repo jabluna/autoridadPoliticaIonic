@@ -68,5 +68,16 @@
 }
 @if(confirmDelete){<div class="overlay"><section class="confirm-modal" role="alertdialog" aria-modal="true"><h2>Eliminar campaña</h2><p>¿Eliminar “{{confirmDelete.nombreCampana}}”? Esta acción no elimina automáticamente las subcolecciones de la red en Firestore.</p><div class="modal-actions"><button class="secondary-btn" (click)="confirmDelete=null">Cancelar</button><button class="delete-btn" [disabled]="saving" (click)="deleteCampaign()">Eliminar</button></div></section></div>}
 @if(requestUpgrade){<div class="overlay"><section class="confirm-modal" role="dialog" aria-modal="true"><h2>Ampliación de plan</h2><p>La corporación {{requestUpgrade}} no está habilitada en tu plan. Puedes solicitar autorización al administrador.</p><div class="modal-actions"><button class="secondary-btn" (click)="requestUpgrade=null">Cancelar</button><button class="primary-btn" [disabled]="saving" (click)="sendUpgrade()">Solicitar</button></div></section></div>}
-@if(menuOpen){<div class="overlay" (click)="menuOpen=false"><section class="side-menu" (click)="$event.stopPropagation()"><div class="modal-head"><strong>AUTORIDAD POLÍTICA</strong><button class="icon-btn" (click)="menuOpen=false"><ion-icon name="close-outline"></ion-icon></button></div><button (click)="back()">Dashboard</button><button (click)="menuOpen=false">Configuración de campañas</button><p>Las demás secciones se habilitarán en sus respectivas pantallas.</p></section></div>}
+@if(menuOpen){<div class="overlay" (click)="menuOpen=false"><section class="side-menu" (click)="$event.stopPropagation()"><div class="modal-head"><strong>AUTORIDAD POLÍTICA</strong><button class="icon-btn" (click)="menuOpen=false"><ion-icon name="close-outline"></ion-icon></button></div>
+<p class="menu-heading">PRINCIPAL</p>
+<button (click)="navigate('/dashboard')">Dashboard</button>
+<button (click)="menuOpen=false" class="selected-menu">Configuración de campañas</button>
+<button (click)="navigate('/mired')">Mi red</button>
+<button (click)="navigate('/invitaciones')">Invitaciones a campañas</button>
+<button (click)="navigate('/evolucion-historica')">Evolución histórica</button>
+<p class="menu-heading">MEDIOS</p>
+<button (click)="navigate('/autorizaciones-gestion')">Autorizaciones y gestión</button>
+<button (click)="navigate('/medios')">Medios</button>
+<button (click)="navigate('/galeria')">Galería</button>
+</section></div>}
 </ion-content>
